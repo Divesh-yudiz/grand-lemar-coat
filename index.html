@@ -13,90 +13,123 @@
   <div class="config-sidebar">
     <h2>YOUR JACKET DESIGN</h2>
 
-    <div class="config-section">
-      <div class="config-row">
-        <span class="config-label">BUTTONING</span>
-        <select class="config-select" id="buttoning-select">
-          <option value="single_breasted_1">SINGLE BREASTED: 1 BUTTON</option>
-          <option value="single_breasted_2">SINGLE BREASTED: 2 BUTTONS</option>
-          <option value="double_breasted_6">DOUBLE BREASTED: 6 BUTTONS</option>
-        </select>
+    <div class="config-content">
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">BUTTONING</span>
+          <select class="config-select" id="buttoning-select">
+            <option value="double_breasted_6">DOUBLE BREASTED: 6 BUTTONS</option>
+            <option value="single_breasted_2_5">SINGLE BREASTED: 2.5 BUTTONS</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="config-section">
-      <div class="config-row">
-        <span class="config-label">LAPEL STYLE</span>
-        <select class="config-select" id="lapel-style-select">
-          <option value="notch">NOTCH</option>
-          <option value="peak">PEAK</option>
-          <option value="shawl">SHAWL</option>
-        </select>
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">LAPEL STYLE</span>
+          <select class="config-select" id="lapel-style-select">
+            <option value="notch">NOTCH</option>
+            <option value="peak">PEAK</option>
+            <option value="notchpeak">NOTCHPEAK</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="config-section">
-      <div class="config-row">
-        <span class="config-label">LAPEL WIDTH</span>
-        <select class="config-select" id="lapel-width-select">
-          <option value="narrow">NARROW</option>
-          <option value="medium">MEDIUM</option>
-          <option value="wide">WIDE</option>
-        </select>
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">SHOULDER</span>
+          <select class="config-select" id="shoulder-select">
+            <option value="natural_unconstructed">NATURAL SHOULDER - UNCONSTRUCTED (0 MM)</option>
+            <option value="natural_lightly_padded">NATURAL SHOULDER - LIGHTLY PADDED (2 MM)</option>
+            <option value="natural_structured">NATURAL SHOULDER - STRUCTURED (5 MM)</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="config-section">
-      <div class="config-row">
-        <span class="config-label">VENT</span>
-        <select class="config-select" id="vent-select">
-          <option value="none">NONE</option>
-          <option value="single">SINGLE</option>
-          <option value="double">DOUBLE</option>
-        </select>
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">MARTINGALE BELT</span>
+          <select class="config-select" id="martingale-belt-select">
+            <option value="true">TRUE</option>
+            <option value="false">FALSE</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="config-section">
-      <div class="config-row">
-        <span class="config-label">CONSTRUCTION</span>
-        <select class="config-select" id="construction-select">
-          <option value="half_canvas">HALF CANVAS</option>
-          <option value="full_canvas">FULL CANVAS</option>
-        </select>
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">INVERTED BOX PLEAT</span>
+          <select class="config-select" id="inverted-box-pleat-select">
+            <option value="true">TRUE</option>
+            <option value="false">FALSE</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="config-section">
-      <div class="config-row">
-        <span class="config-label">SHOULDER</span>
-        <select class="config-select" id="shoulder-select">
-          <option value="natural_unconstructed">NATURAL SHOULDER - UNCONSTRUCTED (0 MM)</option>
-          <option value="natural_lightly_padded">NATURAL SHOULDER - LIGHTLY PADDED (2 MM)</option>
-          <option value="natural_structured">NATURAL SHOULDER - STRUCTURED (5 MM)</option>
-          <option value="rope_shoulder_structured_5mm">ROPE SHOULDER - STRUCTURED (5 MM)</option>
-        </select>
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">VENT</span>
+          <select class="config-select" id="vent-select">
+            <option value="None">NONE</option>
+            <option value="Single">SINGLE</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="config-section">
-      <div class="config-row">
-        <span class="config-label">AMF</span>
-        <select class="config-select" id="amf-select">
-          <option value="2mm_standard">2 MM (STANDARD)</option>
-          <option value="3mm_enhanced">3 MM (ENHANCED)</option>
-        </select>
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">CHEST POCKET</span>
+          <select class="config-select" id="chest-pocket-select">
+            <option value="boat">BOAT</option>
+            <option value="none">NONE</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="config-section">
-      <div class="config-row">
-        <span class="config-label">CHEST POCKET</span>
-        <select class="config-select" id="chest-pocket-select">
-          <option value="boat">BOAT</option>
-          <option value="patch">PATCH</option>
-          <option value="welt">WELT</option>
-        </select>
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">SIDE POCKET</span>
+          <select class="config-select" id="side-pocket-select">
+            <option value="postbox">POSTBOX</option>
+            <option value="path-with-flaps">PATCH WITH FLAPS</option>
+            <option value="slanted-welt">SLANTED WELT</option>
+            <option value="jetted">JETTED</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">SLEEVE DESIGN</span>
+          <select class="config-select" id="sleeve-design-select">
+            <option value="cuffed">CUFFED</option>
+            <option value="un-cuffed">UN-CUFFED</option>
+            <option value="sleeve-strap">SLEEVE STRAP</option>
+            <option value="sleeve-strap-with-buttons">FULL SLEEVE STRAP WITH BUTTONS</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">LINING</span>
+          <select class="config-select" id="lining-select">
+            <option value="unlined">UNLINED</option>
+            <option value="full-lining">FULL LINING</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">BUTTONHOLE LAPEL POSITION</span>
+          <select class="config-select" id="buttonhole-lapel-position-select">
+            <option value="left">LEFT</option>
+            <option value="right">RIGHT</option>
+            <option value="both">BOTH</option>
+            <option value="none">NONE</option>
+          </select>
+        </div>
       </div>
     </div>
 
