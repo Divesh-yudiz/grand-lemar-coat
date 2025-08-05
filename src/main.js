@@ -10,8 +10,8 @@ const loadedMeshes = {};
 // ----- Configuration Data -----
 const CONFIG = {
   defaults: {
-    buttoning: 'double_breasted_6',
-    lapelStyle: 'notchpeak',
+    buttoning: 'single_breasted_2',
+    lapelStyle: 'peak',
     front: 'Front_Structured',
     lapelWidth: 'narrow',
     construction: 'half_canvas',
@@ -22,7 +22,7 @@ const CONFIG = {
     invertedBoxPleat: true,
     sidePocket: "slanted_pocket",
     sleeveDesign: "cuffed",
-    linings: "full",
+    linings: "half",
     vent: "Structured"
   },
   // Define which lapel styles are available for each buttoning type
@@ -345,6 +345,7 @@ function updateSleeveDesign(styleKey) {
 }
 
 function updateLinings(styleKey) {
+  console.log("updateLinings", styleKey)
   const liningtMap = {
     full: 'Lining_6_Buttons',
     half: 'Lining_2-4_Buttons',
