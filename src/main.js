@@ -3,6 +3,7 @@ import { OrbitControls } from "https://esm.sh/three@0.169.0/examples/jsm/control
 import { GLTFLoader } from "https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js";
 import { EffectComposer } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/RenderPass.js";
+import * as dat from "https://esm.sh/dat.gui@0.7.9";
 import poloCoaModel from './assets/polo_coat.glb';
 import fabric1 from './assets/fabrics/uv.png';
 import fabric2uv from './assets/fabrics/color.jpeg';
@@ -10,7 +11,16 @@ import fabric2uv from './assets/fabrics/color.jpeg';
 // ----- Global Variables -----
 let scene, camera, renderer, controls, suitGroup, composer, renderPass;
 let aLight = [], dirLight2, dirLight3;
+let cameraFollowLight; // Add this new variable
 const loadedMeshes = {};
+
+// Add GUI variables
+let gui;
+let lightOffset = {
+  x: -20,
+  y: 16.8,
+  z: 10
+};
 
 let currentButtoning, currentLapelStyle, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings, currentVent, currentButtonholeLapelPosition;
 
@@ -90,16 +100,22 @@ function initThree() {
 
   document.getElementById("viewer").appendChild(renderer.domElement);
 
-
   // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambientLight);
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-  dirLight.castShadow = true;
-  camera.add(dirLight);
-  dirLight.position.set(5, 5, 5);
-  scene.add(camera);
+  // Create directional light that will follow camera with offset
+  cameraFollowLight = new THREE.DirectionalLight(0xffffff, 3.9);
+  cameraFollowLight.castShadow = true;
+  cameraFollowLight.shadow.mapSize.width = 2048;
+  cameraFollowLight.shadow.mapSize.height = 2048;
+  cameraFollowLight.shadow.camera.near = 0.5;
+  cameraFollowLight.shadow.camera.far = 50;
+  cameraFollowLight.shadow.camera.left = -10;
+  cameraFollowLight.shadow.camera.right = 10;
+  cameraFollowLight.shadow.camera.top = 10;
+  cameraFollowLight.shadow.camera.bottom = -10;
+  scene.add(cameraFollowLight);
 
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);
@@ -107,14 +123,59 @@ function initThree() {
   suitGroup = new THREE.Group();
   scene.add(suitGroup);
 
+  // Initialize GUI
+  initGUI();
+
   animate();
 }
 
+function initGUI() {
+  gui = new dat.GUI();
 
+  // Create a folder for light controls
+  const lightFolder = gui.addFolder('Camera Follow Light');
+
+  // Add controls for light offset
+  lightFolder.add(lightOffset, 'x', -20, 20, 0.1).name('Offset X').onChange(() => {
+    // The offset will be applied in the animate function
+  });
+
+  lightFolder.add(lightOffset, 'y', -20, 20, 0.1).name('Offset Y').onChange(() => {
+    // The offset will be applied in the animate function
+  });
+
+  lightFolder.add(lightOffset, 'z', -20, 20, 0.1).name('Offset Z').onChange(() => {
+    // The offset will be applied in the animate function
+  });
+
+  // Add control for light intensity
+  lightFolder.add(cameraFollowLight, 'intensity', 0, 5, 0.1).name('Intensity');
+
+  // Open the folder by default
+  lightFolder.open();
+
+  // Position the GUI in a good location
+  gui.domElement.style.position = 'absolute';
+  gui.domElement.style.top = '10px';
+  gui.domElement.style.right = '10px';
+}
 
 function animate() {
-  // Remove the camera-following light behavior that was causing issues
-  // The lights now have fixed positions for consistent lighting
+  if (cameraFollowLight) {
+    // Calculate offset position relative to camera using GUI values
+    const offset = new THREE.Vector3(lightOffset.x, lightOffset.y, lightOffset.z);
+    cameraFollowLight.position.copy(camera.position).add(offset);
+
+    // Update the shadow camera to match the new light position
+    cameraFollowLight.shadow.camera.updateProjectionMatrix();
+
+    // Optionally, you can also update the light's target to always point at the center
+    cameraFollowLight.lookAt(0, 0, 0);
+  }
+
+  console.log("cameraFollowLight", cameraFollowLight.position);
+  console.log("camera position", camera.position);
+
   requestAnimationFrame(animate);
   composer.render();
 }
@@ -166,9 +227,9 @@ async function storeTopLevelGroups(root) {
     });
 
     // Updated to pass both color and normal textures
-    // loadAndApplyFabric(fabric1, fabric2uv, {
-    //   repeat: [50, 50],
-    // });
+    loadAndApplyFabric(fabric1, fabric2uv, {
+      repeat: [50, 50],
+    });
 
     console.log("Top-level groups:", loadedMeshes);
 
@@ -360,13 +421,6 @@ function invertedBoxPleat(styleKey, visibility = true) {
 
   console.log("buttoningConfig", buttoningConfig);
   console.log("styleKey", styleKey);
-  // if (!styleKey) {
-  //   const invertedBoxPleatGroup = loadedMeshes['Inverted_Box_pleat'];
-  //   if (invertedBoxPleatGroup) {
-  //     invertedBoxPleatGroup.visible = false;
-  //   }
-  //   return;
-  // }
 
   const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
 
@@ -796,13 +850,14 @@ function applyFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
     if (mesh.isMesh && mesh.material) {
       if (!isButtonMesh(mesh.name)) {
 
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        // mesh.castShadow = true;
+        // mesh.receiveShadow = true;
 
         mesh.material.map = colorTexture;
-        mesh.material.normalMap = normalTexture;
-        mesh.material.map.needsUpdate = true;
-        mesh.material.normalMap.needsUpdate = true;
+        mesh.material.normal = normalTexture;
+        mesh.material.normalScale.set(1, 1);
+
+        colorTexture.encoding = THREE.sRGBEncoding;
 
         mesh.material.polygonOffset = true;
         mesh.material.polygonOffsetFactor = 1;
@@ -823,13 +878,20 @@ function applyFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
         mesh.material.depthWrite = true;
         mesh.material.depthTest = true;
 
-        mesh.material.metalness = 0;
         mesh.material.roughness = 1;
+        mesh.material.metalness = 0.5;
+        mesh.material.normalScale.set(50, 50);
         mesh.material.needsUpdate = true;
 
+        const repeatX = materialOptions.repeat?.[0] || 50;
+        const repeatY = materialOptions.repeat?.[1] || 50;
+
+        colorTexture.repeat.set(repeatX, repeatY);
+        normalTexture.repeat.set(repeatX, repeatY);
+
         // Enable shadow casting and receiving
-        mesh.receiveShadow = true;
-        mesh.castShadow = true;
+        // mesh.receiveShadow = true;
+        // mesh.castShadow = true;
 
         mesh.material.needsUpdate = true;
       }
