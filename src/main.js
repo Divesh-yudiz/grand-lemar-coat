@@ -6,12 +6,10 @@ import { RenderPass } from "https://esm.sh/three@0.169.0/examples/jsm/postproces
 import poloCoaModel from './assets/polo_coat.glb';
 import fabric1 from './assets/fabrics/uv.png';
 import fabric2uv from './assets/fabrics/color.jpeg';
-import * as dat from "https://esm.sh/dat.gui@0.7.9";
 
 // ----- Global Variables -----
 let scene, camera, renderer, controls, suitGroup, composer, renderPass;
-let aLight = [], dirLight, dirLight2, dirLight3;
-let gui, lightSettings = {};
+let aLight = [], dirLight2, dirLight3;
 const loadedMeshes = {};
 
 let currentButtoning, currentLapelStyle, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings, currentVent, currentButtonholeLapelPosition;
@@ -69,7 +67,6 @@ function initThree() {
     1,
     1000
   );
-
   camera.position.set(0, 0, 10);
   camera.updateProjectionMatrix();
   camera.lookAt(0, 0, 0);
@@ -83,274 +80,41 @@ function initThree() {
     depth: true,
     precision: "highp"
   });
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
-  renderer.shadowMap.enabled = true;
-  // Use softer variance shadow mapping to reduce harsh dark areas
-  renderer.shadowMap.type = THREE.VSMShadowMap;
-  renderer.shadowMap.autoUpdate = true;
-
-
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.outputColorSpace = 'srgb';
-  // renderer.setSize(window.innerWidth - 350, window.innerHeight);
-
   renderer.setSize(window.innerWidth - 350, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
   composer = new EffectComposer(renderer);
-  const renderPass = new RenderPass(scene, camera);
+  renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
   document.getElementById("viewer").appendChild(renderer.domElement);
 
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+  scene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+  dirLight.castShadow = true;
+  camera.add(dirLight);
+  dirLight.position.set(5, 5, 5);
+  scene.add(camera);
+
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);
-  // controls.enableDamping = true;
-  // controls.minPolarAngle = Math.PI / 2;
-  // controls.maxPolarAngle = Math.PI / 2;
-
+  // Suit group holder
   suitGroup = new THREE.Group();
   scene.add(suitGroup);
-
-  // Suit group holder
-  // addDirectionalLight(5.410, -2.778, -13.836, 1);
-  addDirectionalLight(-49, 6, 50, 3);
 
   animate();
 }
 
-const addDirectionalLight = (x, y, z, intensity) => {
-  // More ambient fill (brighter ground color, higher intensity)
-  const ambientLight = new THREE.HemisphereLight(0xffffff, 0x222222, 0.2);
-  scene.add(ambientLight);
 
-  // Fill light a bit lower
-  dirLight2 = new THREE.DirectionalLight(0xffffff, 1.1);
-  aLight.push(dirLight2);
-  dirLight2.target = suitGroup;
-  dirLight2.position.set(37, 14, 74);
-  // scene.add(dirLight2);
-
-  // Key light casting shadows – reduce intensity
-  dirLight3 = new THREE.DirectionalLight(0xffffff, 3);
-  aLight.push(dirLight3);
-  dirLight3.castShadow = true;
-  dirLight3.target = suitGroup;
-  dirLight3.position.set(x, y, z);
-  dirLight3.shadow.color = new THREE.Color(0x000000);
-  scene.add(dirLight3);
-
-  const bulbGeometry = new THREE.CapsuleGeometry(0.5, 1, 4, 8);
-  const bulbLight = new THREE.PointLight(0xffffff, 1.0, 100, 0.00001);
-
-  const bulbMat = new THREE.MeshStandardMaterial({
-    emissive: 0x000000,
-    emissiveIntensity: 0,
-    color: 0x000000,
-    transparent: true,
-    opacity: 0
-  });
-  bulbLight.add(new THREE.Mesh(bulbGeometry, bulbMat));
-  bulbLight.position.set(0, -1.2, 0);
-  bulbLight.castShadow = true;
-  // scene.add(bulbLight);
-
-  const bulbGeometry1 = new THREE.CapsuleGeometry(0.5, 2, 4, 8);
-  const bulbLight1 = new THREE.PointLight(0xffffff, 1.0, 100, 0.00001);
-
-  const bulbMat1 = new THREE.MeshStandardMaterial({
-    emissive: 0x000000,
-    emissiveIntensity: 0,
-    color: 0x000000,
-    transparent: true,
-    opacity: 0
-  });
-  bulbLight1.add(new THREE.Mesh(bulbGeometry1, bulbMat1));
-  bulbLight1.position.set(0, 0.5, 0);
-  bulbLight1.castShadow = true;
-  // scene.add(bulbLight1);
-
-  const bulbGeometry2 = new THREE.CapsuleGeometry(0.5, 0.5, 4, 8);
-  const bulbLight2 = new THREE.PointLight(0xffffff, 0.5, 100, 0.00001);
-
-  const bulbMat2 = new THREE.MeshStandardMaterial({
-    emissive: 0x000000,
-    emissiveIntensity: 0,
-    color: 0x000000,
-    transparent: true,
-    opacity: 0
-  });
-  bulbLight2.add(new THREE.Mesh(bulbGeometry2, bulbMat2));
-  bulbLight2.position.set(0, 1, 0);
-  bulbLight2.castShadow = true;
-  // scene.add(bulbLight2);
-  // bulbLight.visible = false;
-
-  // Update shadow settings for dirLight3
-  dirLight3.shadow.mapSize.width = 2048;  // Increased resolution for sharper shadows
-  dirLight3.shadow.mapSize.height = 2048; // Increased resolution for sharper shadows
-  dirLight3.shadow.camera.near = 0.5;
-  dirLight3.shadow.camera.far = 500;
-  dirLight3.shadow.bias = -0.00001; // Adjust bias to reduce shadow acne
-  dirLight3.shadow.normalBias = 0.001;
-  dirLight3.shadow.radius = 20;          // Reduced blur for sharper shadows
-  dirLight3.shadow.camera.updateProjectionMatrix();
-
-  // Tighter shadow camera frustum for better resolution
-  dirLight3.shadow.camera.left = -1.5;     // Tighter bounds for better shadow detail
-  dirLight3.shadow.camera.right = 1.5;
-  dirLight3.shadow.camera.top = 1.5;
-  dirLight3.shadow.camera.bottom = -1.5;
-
-  // Shadow settings for bulbLight
-  bulbLight.shadow.mapSize.width = 2048;       // Increased resolution for sharper shadows
-  bulbLight.shadow.mapSize.height = 2048;      // Increased resolution for sharper shadows
-  bulbLight.shadow.camera.near = 0.1;
-  bulbLight.shadow.camera.far = 100;
-  bulbLight.shadow.bias = -0.00005;            // Reduced bias for sharper edges
-  bulbLight.shadow.normalBias = 0.001;         // Reduced normal bias for sharper edges
-  bulbLight.shadow.radius = 0.5;               // Reduced blur for sharper shadows
-
-  // Shadow settings for bulbLight1
-  bulbLight1.shadow.mapSize.width = 2048;      // Increased resolution for sharper shadows
-  bulbLight1.shadow.mapSize.height = 2048;     // Increased resolution for sharper shadows
-  bulbLight1.shadow.camera.near = 0.1;
-  bulbLight1.shadow.camera.far = 100;
-  bulbLight1.shadow.bias = -0.00005;           // Reduced bias for sharper edges
-  bulbLight1.shadow.normalBias = 0.001;        // Reduced normal bias for sharper edges
-  bulbLight1.shadow.radius = 0.5;              // Reduced blur for sharper shadows
-
-  bulbLight2.shadow.mapSize.width = 2048;      // Increased resolution for sharper shadows
-  bulbLight2.shadow.mapSize.height = 2048;     // Increased resolution for sharper shadows
-  bulbLight2.shadow.camera.near = 0.1;
-  bulbLight2.shadow.camera.far = 100;
-  bulbLight2.shadow.bias = -0.00005;           // Reduced bias for sharper edges
-  bulbLight2.shadow.normalBias = 0.001;        // Reduced normal bias for sharper edges
-  bulbLight2.shadow.radius = 0.5;              // Reduced blur for sharper shadows
-
-  setGUI();
-};
-
-function setGUI() {
-  gui = new dat.GUI()
-  lightSettings = lightSettings || {};
-
-  const lightFolder = gui.addFolder('Directional Lights')
-
-  // Light 2 controls
-  const light2 = lightFolder.addFolder('Light 2 Position')
-  lightSettings.light2 = {
-    x: dirLight2.position.x,
-    y: dirLight2.position.y,
-    z: dirLight2.position.z
-  }
-  light2.add(lightSettings.light2, 'x', -100, 100, 1)
-    .onChange(value => dirLight2.position.x = value)
-  light2.add(lightSettings.light2, 'y', -100, 100, 1)
-    .onChange(value => dirLight2.position.y = value)
-  light2.add(lightSettings.light2, 'z', -100, 100, 1)
-    .onChange(value => dirLight2.position.z = value)
-
-  // Light 3 controls
-  // Light 3 controls
-  const light3 = lightFolder.addFolder('Light 3 Position')
-  lightSettings.light3 = {
-    x: dirLight3.position.x,
-    y: dirLight3.position.y,
-    z: dirLight3.position.z
-  }
-  light3.add(lightSettings.light3, 'x', -100, 100, 1)
-    .onChange(value => dirLight3.position.x = value)
-  light3.add(lightSettings.light3, 'y', -100, 100, 1)
-    .onChange(value => dirLight3.position.y = value)
-  light3.add(lightSettings.light3, 'z', -100, 100, 1)
-    .onChange(value => dirLight3.position.z = value)
-
-  // Light 3 Offset (used in animate)
-  const light3Offset = lightFolder.addFolder('Light 3 Offset (camera space)')
-  lightSettings.light3Offset = lightSettings.light3Offset || { x: -49, y: 14, z: 50 }
-  light3Offset.add(lightSettings.light3Offset, 'x', -200, 200, 1).name('offsetX')
-  light3Offset.add(lightSettings.light3Offset, 'y', -200, 200, 1).name('offsetY')
-  light3Offset.add(lightSettings.light3Offset, 'z', -200, 200, 1).name('offsetZ')
-
-  // Add shadow controls for Light 3
-  const shadow3 = lightFolder.addFolder('Light 3 Shadow')
-  lightSettings.shadow3 = {
-    bias: -0.0001,
-    normalBias: 0.05,
-    radius: 0,
-    mapSize: 512,
-    cameraLeft: -30,
-    cameraRight: 30,
-    cameraTop: 30,
-    cameraBottom: -30,
-    cameraNear: 0.1,
-    cameraFar: 500
-  }
-
-  shadow3.add(lightSettings.shadow3, 'bias', -0.0001, 0.0001, 0.00001)
-    .onChange(value => dirLight3.shadow.bias = value)
-  shadow3.add(lightSettings.shadow3, 'normalBias', 0, 0.05, 0.001)
-    .onChange(value => dirLight3.shadow.normalBias = value)
-  shadow3.add(lightSettings.shadow3, 'radius', 0, 10, 0.1)
-    .onChange(value => dirLight3.shadow.radius = value)
-  shadow3.add(lightSettings.shadow3, 'mapSize', 512, 4096, 512)
-    .onChange(value => {
-      dirLight3.shadow.mapSize.width = value
-      dirLight3.shadow.mapSize.height = value
-    })
-  shadow3.add(lightSettings.shadow3, 'cameraLeft', -100, 0, 1)
-    .onChange(value => dirLight3.shadow.camera.left = value)
-  shadow3.add(lightSettings.shadow3, 'cameraRight', 0, 100, 1)
-    .onChange(value => dirLight3.shadow.camera.right = value)
-  shadow3.add(lightSettings.shadow3, 'cameraTop', 0, 100, 1)
-    .onChange(value => dirLight3.shadow.camera.top = value)
-  shadow3.add(lightSettings.shadow3, 'cameraBottom', -100, 0, 1)
-    .onChange(value => dirLight3.shadow.camera.bottom = value)
-  shadow3.add(lightSettings.shadow3, 'cameraNear', 0.1, 10, 0.1)
-    .onChange(value => dirLight3.shadow.camera.near = value)
-  shadow3.add(lightSettings.shadow3, 'cameraFar', 100, 1000, 10)
-    .onChange(value => dirLight3.shadow.camera.far = value)
-
-
-}
 
 function animate() {
   // Remove the camera-following light behavior that was causing issues
   // The lights now have fixed positions for consistent lighting
-
-  // Get camera's direction vector
-  const cameraDirection = new THREE.Vector3();
-  camera.getWorldDirection(cameraDirection);
-
-  if (dirLight2) {
-    const offsetX = 37 * 10;
-    const offsetY = 14 * 10;
-    const offsetZ = 74 * 10;
-
-    const quaternion = camera.quaternion;
-    const offsetVector = new THREE.Vector3(offsetX, offsetY, offsetZ);
-    offsetVector.applyQuaternion(quaternion);
-
-    dirLight2.position.copy(camera.position).add(offsetVector);
-  }
-
-  if (dirLight3) {
-    const offsetX = (lightSettings?.light3Offset?.x ?? 56);
-    const offsetY = (lightSettings?.light3Offset?.y ?? -200);
-    const offsetZ = (lightSettings?.light3Offset?.z ?? -200);
-
-    const quaternion = camera.quaternion;
-    const offsetVector = new THREE.Vector3(offsetX, offsetY, offsetZ);
-    offsetVector.applyQuaternion(quaternion);
-    dirLight3.position.copy(camera.position).add(offsetVector);
-    dirLight3.target.position.copy(new THREE.Vector3(0, 0, 0));
-    dirLight3.shadow.camera.updateProjectionMatrix();
-    dirLight3.target.updateMatrixWorld();
-  }
-
-  if (controls) controls.update();
-
   requestAnimationFrame(animate);
   composer.render();
 }
@@ -362,6 +126,8 @@ function loadJacketModel(url) {
     suitGroup.clear();
     suitGroup.add(model);
     centerModel(model);
+
+    // model.rotation.y = Math.PI;
 
     await storeTopLevelGroups(model);  // Add await here
     applyDefaultConfig();              // Now this runs after meshes are stored
@@ -400,9 +166,9 @@ async function storeTopLevelGroups(root) {
     });
 
     // Updated to pass both color and normal textures
-    loadAndApplyFabric(fabric1, fabric2uv, {
-      repeat: [50, 50],
-    });
+    // loadAndApplyFabric(fabric1, fabric2uv, {
+    //   repeat: [50, 50],
+    // });
 
     console.log("Top-level groups:", loadedMeshes);
 
@@ -477,9 +243,10 @@ function updateLapelStyle(styleKey) {
   };
   currentLapelStyle = styleKey;
   updateVariant('lapel', lapelMap[styleKey]);
+  updateButtonholeLapelPosition(currentButtonholeLapelPosition || CONFIG.defaults.buttonholeLapelPosition);
 }
 
-function updateButtoning(styleKey) {
+function updateButtoning(styleKey, toggle = true, visibility = true) {
   const buttoningMap = {
     single_breasted_2: '2_Buttons',
     double_breasted_6: '6_buttons',
@@ -491,24 +258,17 @@ function updateButtoning(styleKey) {
 
   currentButtoning = styleKey;
 
-  if (styleKey === 'double_breasted_6') {
-    updateVariant('Buttons', buttoningMap[styleKey]);
-    // updateVariant('back', "back");
-  } else {
-    updateVariant('Buttons', buttoningMap[styleKey]);
-  }
+  updateVariant('Buttons', buttoningMap[styleKey], toggle, visibility);
 }
 
 function updateFront() {
-  const currentButtoning = CONFIG.defaults.buttoning;
-  const currentShoulder = CONFIG.defaults.shoulder;
   const currentLapel = CONFIG.defaults.lapelStyle;
   let frontStyleKey;
 
   if (currentButtoning === 'single_breasted_2') {
-    frontStyleKey = `2_Buttons_Front_${currentShoulder}`;
+    frontStyleKey = `2_Buttons_Front_${CONFIG.defaults.shoulder || currentShoulder}`;
   } else if (currentButtoning === 'double_breasted_6') {
-    frontStyleKey = `6_Buttons_Front_${currentShoulder}`;
+    frontStyleKey = `6_Buttons_Front_${CONFIG.defaults.shoulder || currentShoulder}`;
   } else {
     console.warn(`Unsupported buttoning type for front: ${currentButtoning}`);
     return;
@@ -517,17 +277,18 @@ function updateFront() {
   const frontMap = {
     '2_Buttons_Front_Structured': '2Button_Structured',
     '2_Buttons_Front_Unconstructed': '2Button_Unconstructed',
-    '2_Buttons_Front_Lightly_Padded': '2Button_Lightly_Padded',
+    '2_Buttons_Front_Lightly_Padded': '2Button_Lightly_padded',
     '6_Buttons_Front_Structured': '6Button_Structured',
     '6_Buttons_Front_Unconstructed': '6Button_Unconstructed',
     '6_Buttons_Front_Lightly_Padded': '6Button_Lightly_Padded',
   };
-
   currentFront = frontStyleKey;
   updateVariant('Front', frontMap[frontStyleKey]);
 }
 
 function updateShoulders(styleKey) {
+
+  console.log("updateShoulders", styleKey);
   const shoulderMap = {
     Structured: 'Structured',
     Unconstructed: '_Unconstructed',
@@ -556,6 +317,7 @@ function updateShoulders(styleKey) {
   naturalShoulder.visible = true;
 
   // Get the target variant name
+  console.log("styleKey", shoulderMap[styleKey]);
   const variantName = shoulderMap[styleKey] || 'Structured';
 
   // Hide all variants first, then show only the target one
@@ -596,23 +358,25 @@ function invertedBoxPleat(styleKey, visibility = true) {
 
   const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
 
-  if (!styleKey) {
-    const invertedBoxPleatGroup = loadedMeshes['Inverted_Box_pleat'];
-    if (invertedBoxPleatGroup) {
-      invertedBoxPleatGroup.visible = false;
-    }
-    return;
-  }
+  console.log("buttoningConfig", buttoningConfig);
+  console.log("styleKey", styleKey);
+  // if (!styleKey) {
+  //   const invertedBoxPleatGroup = loadedMeshes['Inverted_Box_pleat'];
+  //   if (invertedBoxPleatGroup) {
+  //     invertedBoxPleatGroup.visible = false;
+  //   }
+  //   return;
+  // }
 
   const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
 
   // Map buttoning and shoulder configuration to the appropriate pleat variant
   const pleatVariantMap = {
-    '6_Buttons_Structured': 'Structured_Inverted_box_pleat',
-    '6_Buttons_Unstructured': 'Unconstructed_Inverted_box_pleat',
-    '6_Buttons_Lightly_Padded': 'Lightly_Padded_Inverted_box_pleat',
+    '6_Buttons_Structured': '6button_Structured_Inverted_box_pleat',
+    '6_Buttons_Unconstructed': '6button_Unconstructed_Inverted_box_pleat',
+    '6_Buttons_Lightly_Padded': '6buttonLightly_Padded_Inverted_box_pleat',
     '2_Buttons_Structured': 'Structured_Inverted_box_pleat_2Button',
-    '2_Buttons_Unstructured': '_Unconstructed_Inverted_box_pleat_2Button',
+    '2_Buttons_Unconstructed': '_Unconstructed_Inverted_box_pleat_2Button',
     '2_Buttons_Lightly_Padded': 'Lightly_Padded_Inverted_box_pleat_2Button'
   };
 
@@ -650,7 +414,7 @@ function updateSidePocket(styleKey) {
     'jetted': 'jetted_pocket',
     'path-with-flaps': 'Patch',
     'postbox': 'postbox_pocket',
-    'slanted-welt': 'slanted_pocket',
+    'slanted-welt': 'slanted',
   };
   currentSidePocket = styleKey;
   updateVariant('Sidepocket', sidePocketMap[styleKey]);
@@ -664,12 +428,16 @@ function updateSleeveDesign(styleKey) {
     'sleeve-strap-with-buttons': 'Full_Sleeve_Strap_with_buttons'
   };
 
+  // Handle sleeve-specific buttons separately without affecting main buttoning
   if (styleKey === 'sleeve-strap-with-buttons') {
-    updateButtoning('sec_strap', false);
+    updateVariant('sleave_buttons', 'sec_strap', true);
+  } else if (styleKey === 'sleeve-strap') {
+    updateVariant('sleave_buttons', 'one_strap_button', true);
+  } else if (styleKey === 'un-cuffed') {
+    updateVariant('sleave_buttons', 'none', true);
   }
-  if (styleKey === 'sleeve-strap') {
-    updateButtoning('one_strap', false);
-  }
+
+  console.log("sleeveDesignMap", loadedMeshes);
 
   currentSleeveDesign = styleKey;
   updateVariant('Sleeve_design', sleeveDesignMap[styleKey]);
@@ -714,29 +482,52 @@ function updateLinings(visibility = true) {
 
 function updateVent() {
   const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
+  const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
+  const martingaleBeltValue = currentMartingaleBelt || CONFIG.defaults.martingaleBelt;
+  const invertedBoxPleatValue = currentInvertedBoxPleat || CONFIG.defaults.invertedBoxPleat;
 
-  // Only show vent for single breasted (2 buttons)
-  if (buttoningConfig !== 'single_breasted_2') {
-    const ventGroup = loadedMeshes['vent'];
-    if (ventGroup) {
-      ventGroup.visible = false;
-    }
+  console.log("buttoningConfig", buttoningConfig);
+  console.log("shoulderConfig", shoulderConfig);
+  console.log("martingaleBeltValue", martingaleBeltValue);
+  console.log("invertedBoxPleatValue", invertedBoxPleatValue);
+
+  // Check constraint: if both martingale belt and inverted pleat are true, show no vent
+  if (martingaleBeltValue === true && invertedBoxPleatValue === true) {
+    console.log("Both martingale belt and inverted pleat are true, hiding vent");
+    updateVariant('vent', "none");
+    currentVent = "none";
+    return;
+  }
+
+  // Construct the key based on buttoning and shoulder configuration
+  let ventKey;
+  if (buttoningConfig === 'single_breasted_2') {
+    ventKey = `2Button_${shoulderConfig}`;
+  } else if (buttoningConfig === 'double_breasted_6') {
+    ventKey = `6Button_${shoulderConfig}`;
+  } else {
+    console.warn(`Unsupported buttoning type for vent: ${buttoningConfig}`);
     return;
   }
 
   const ventMap = {
-    'Structured': '2_button_structured',
-    'Unconstructed': '2_button_Unconstructed',
-    'Lightly_Padded': '2_button_lightly_Padded'
+    '6Button_Structured': '6Button_Vent_Structured',
+    '6Button_Unconstructed': '6Button_vent_Unconstructed',
+    '6Button_Lightly_Padded': '6Button_lightly_Padded',
+    '2Button_Structured': '2button_vent_Structured',
+    '2Button_Unconstructed': '2button_vent_unconstructured',
+    '2Button_Lightly_Padded': '2button_vent_lightly_padded'
   };
-  const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
-  const targetVentVariant = ventMap[shoulderConfig];
+
+  const targetVentVariant = ventMap[ventKey];
   currentVent = shoulderConfig;
+  console.log("ventKey", ventKey);
+  console.log("targetVentVariant", targetVentVariant);
 
   if (targetVentVariant) {
     updateVariant('vent', targetVentVariant);
   } else {
-    console.warn(`No vent variant found for shoulder config: ${shoulderConfig}`);
+    console.warn(`No vent variant found for buttoning: ${buttoningConfig}, shoulder: ${shoulderConfig}`);
   }
 }
 
@@ -774,21 +565,38 @@ function updateButtonholeLapelPosition(styleKey) {
     return;
   }
 
-  // Define button names based on the hierarchy structure
+  // Define button names based on the specific hierarchy structure for each lapel type
   const buttonNames = {
-    left: 'lapel_left_button',
-    right: 'lapel_right_button'
+    notch: {
+      left: 'notch_lapel_left_button',
+      right: 'notch_lapel_right_button'
+    },
+    peak: {
+      left: 'peak_left_button',
+      right: 'peak_right_button'
+    },
+    notchpeak: {
+      left: 'notchpeak_lapel_left_button',
+      right: 'notchpeak_lapel_right_button'
+    }
   };
+
+  // Get the button names for the current lapel style
+  const currentButtonNames = buttonNames[currentLapel];
+  if (!currentButtonNames) {
+    console.warn(`No button names defined for lapel style: ${currentLapel}`);
+    return;
+  }
 
   // Handle different position selections
   switch (styleKey) {
     case 'left':
       // Show only left button, hide right button
       currentLapelStyleGroup.children.forEach(child => {
-        if (child.name === buttonNames.left) {
+        if (child.name === currentButtonNames.left) {
           child.visible = true;
           child.traverse(subChild => subChild.visible = true);
-        } else if (child.name === buttonNames.right) {
+        } else if (child.name === currentButtonNames.right) {
           child.visible = false;
           child.traverse(subChild => subChild.visible = false);
         }
@@ -798,10 +606,10 @@ function updateButtonholeLapelPosition(styleKey) {
     case 'right':
       // Show only right button, hide left button
       currentLapelStyleGroup.children.forEach(child => {
-        if (child.name === buttonNames.right) {
+        if (child.name === currentButtonNames.right) {
           child.visible = true;
           child.traverse(subChild => subChild.visible = true);
-        } else if (child.name === buttonNames.left) {
+        } else if (child.name === currentButtonNames.left) {
           child.visible = false;
           child.traverse(subChild => subChild.visible = false);
         }
@@ -811,7 +619,7 @@ function updateButtonholeLapelPosition(styleKey) {
     case 'both':
       // Show both buttons
       currentLapelStyleGroup.children.forEach(child => {
-        if (child.name === buttonNames.left || child.name === buttonNames.right) {
+        if (child.name === currentButtonNames.left || child.name === currentButtonNames.right) {
           child.visible = true;
           child.traverse(subChild => subChild.visible = true);
         }
@@ -821,7 +629,7 @@ function updateButtonholeLapelPosition(styleKey) {
     case 'none':
       // Hide both buttons
       currentLapelStyleGroup.children.forEach(child => {
-        if (child.name === buttonNames.left || child.name === buttonNames.right) {
+        if (child.name === currentButtonNames.left || child.name === currentButtonNames.right) {
           child.visible = false;
           child.traverse(subChild => subChild.visible = false);
         }
@@ -987,12 +795,37 @@ function applyFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
   function applyTexturesToMesh(mesh) {
     if (mesh.isMesh && mesh.material) {
       if (!isButtonMesh(mesh.name)) {
+
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
         mesh.material.map = colorTexture;
         mesh.material.normalMap = normalTexture;
+        mesh.material.map.needsUpdate = true;
+        mesh.material.normalMap.needsUpdate = true;
 
-        // Improved material properties for better lighting response
-        mesh.material.roughness = materialOptions.roughness !== undefined ? materialOptions.roughness : 0.8;
-        mesh.material.metalness = materialOptions.metalness !== undefined ? materialOptions.metalness : 0.1;
+        mesh.material.polygonOffset = true;
+        mesh.material.polygonOffsetFactor = 1;
+        mesh.material.polygonOffsetUnits = 1;
+
+        const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+        colorTexture.anisotropy = maxAnisotropy;
+        normalTexture.anisotropy = maxAnisotropy;
+
+        colorTexture.generateMipmaps = true;
+        colorTexture.minFilter = THREE.LinearMipmapLinearFilter;
+        colorTexture.magFilter = THREE.LinearFilter;
+
+        normalTexture.generateMipmaps = true;
+        normalTexture.minFilter = THREE.LinearMipmapLinearFilter;
+        normalTexture.magFilter = THREE.LinearFilter;
+
+        mesh.material.depthWrite = true;
+        mesh.material.depthTest = true;
+
+        mesh.material.metalness = 0;
+        mesh.material.roughness = 1;
+        mesh.material.needsUpdate = true;
 
         // Enable shadow casting and receiving
         mesh.receiveShadow = true;
@@ -1013,6 +846,48 @@ function applyFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
   console.log('Fabric textures applied to existing materials (excluding buttons)');
 }
 
+// ----- Update Vent Options Based on Martingale Belt and Inverted Box Pleat -----
+function updateVentOptions() {
+  const ventSelect = document.getElementById('vent-select');
+  const martingaleBeltValue = getConfigValue('martingaleBelt');
+  const invertedBoxPleatValue = getConfigValue('invertedBoxPleat');
+
+  // Clear current options
+  ventSelect.innerHTML = '';
+
+  // If both martingale belt and inverted box pleat are true, only show "none"
+  if (martingaleBeltValue === true && invertedBoxPleatValue === true) {
+    const option = document.createElement('option');
+    option.value = 'none';
+    option.textContent = 'NONE';
+    ventSelect.appendChild(option);
+
+    // Set the value to none and update the model
+    ventSelect.value = 'none';
+    CONFIG.defaults.vent = 'none';
+    updateVent();
+  } else {
+    // Show both "none" and "single" options
+    const noneOption = document.createElement('option');
+    noneOption.value = 'none';
+    noneOption.textContent = 'NONE';
+    ventSelect.appendChild(noneOption);
+
+    const singleOption = document.createElement('option');
+    singleOption.value = 'single';
+    singleOption.textContent = 'SINGLE';
+    ventSelect.appendChild(singleOption);
+
+    // Keep current selection if it's valid, otherwise default to 'none'
+    if (ventSelect.value !== 'none' && ventSelect.value !== 'single') {
+      ventSelect.value = 'none';
+      CONFIG.defaults.vent = 'none';
+    }
+
+    updateVent();
+  }
+}
+
 // ----- Update On Config Change -----
 function handleConfigChange(event) {
   const configType = event.target.id.replace('-select', '');
@@ -1028,7 +903,7 @@ function handleConfigChange(event) {
     updateFront();
     if (value === 'single_breasted_2') {
       updateVent();
-      invertedBoxPleat(false);
+      invertedBoxPleat(true);
     } else if (value === 'double_breasted_6') {
       invertedBoxPleat(CONFIG.defaults.invertedBoxPleat);
       const ventGroup = loadedMeshes['vent'];
@@ -1039,6 +914,7 @@ function handleConfigChange(event) {
     updateLinings();
     const currentMartingaleBelt = getConfigValue('martingaleBelt');
     martingaleBelt(currentMartingaleBelt, currentMartingaleBelt);
+    updateVentOptions(); // Add this line
   }
 
   if (configType === 'lapel-style') {
@@ -1056,10 +932,22 @@ function handleConfigChange(event) {
     invertedBoxPleat(true);
   }
 
+  if (configType === 'inverted-box-pleat') {
+    invertedBoxPleat(value);
+    updateVent();
+    updateVentOptions(); // Add this line
+  }
+
+  if (configType === 'vent') {
+    updateVent();
+  }
+
   if (configType === 'martingale-belt') {
     const isVisible = value === 'true';
     currentMartingaleBelt = value;
     martingaleBelt(value, isVisible);
+    updateVent();
+    updateVentOptions(); // Add this line
   }
 
   if (configType === 'chest-pocket') {
@@ -1083,6 +971,7 @@ function handleConfigChange(event) {
   }
 
   if (configType === 'buttonhole-lapel-position') {
+    currentButtonholeLapelPosition = value;
     updateButtonholeLapelPosition(value);
   }
 }
@@ -1135,6 +1024,9 @@ function initConfigUI() {
 
   // Initialize lapel options based on default buttoning
   updateLapelOptions(CONFIG.defaults.buttoning);
+
+  // Initialize vent options based on current martingale belt and inverted box pleat settings
+  updateVentOptions(); // Add this line
 }
 
 // Utility: camelCase to kebab-case (for matching DOM IDs)
