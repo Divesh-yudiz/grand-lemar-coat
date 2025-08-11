@@ -3,19 +3,17 @@ import { OrbitControls } from "https://esm.sh/three@0.169.0/examples/jsm/control
 import { GLTFLoader } from "https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js";
 import { EffectComposer } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/RenderPass.js";
-import * as dat from "https://esm.sh/dat.gui@0.7.9";
 import poloCoaModel from './assets/polo_coat.glb';
-import fabric1 from './assets/fabrics/uv.png';
-import fabric2uv from './assets/fabrics/color.jpeg';
+import fabric1 from './assets/fabrics/color2.png';
+import fabric2uv from './assets/fabrics/uv2.png';
 
 // ----- Global Variables -----
 let scene, camera, renderer, controls, suitGroup, composer, renderPass;
-let aLight = [], dirLight2, dirLight3;
+let aLight = [], dirLight2, dirLight3, backLight;
 let cameraFollowLight; // Add this new variable
 const loadedMeshes = {};
 
-// Add GUI variables
-let gui;
+// Remove GUI variables and keep only the light offset
 let lightOffset = {
   x: -20,
   y: 16.8,
@@ -37,7 +35,10 @@ const CONFIG = {
     sleeveDesign: "cuffed",
     linings: true,
     vent: "Structured",
-    buttonholeLapelPosition: "left"
+    buttonholeLapelPosition: "left",
+    fabric: "fabric1",
+    buttonFabric: "button-fabric1", // Add button fabric default
+    liningFabric: "lining-fabric1"  // Add lining fabric default
   },
   // Define which lapel styles are available for each buttoning type
   lapelConstraints: {
@@ -61,6 +62,47 @@ const CONFIG = {
       Lightly_Padded: 'Lightly_Padded'
     },
 
+  },
+  // Add fabric assets mapping
+  fabrics: {
+    fabric1: {
+      color: './src/assets/fabrics/color2.png',
+      normal: './src/assets/fabrics/uv2.png',
+      name: 'Charcoal Grey'
+    },
+    fabric2: {
+      color: './src/assets/fabrics/color.jpeg',
+      normal: './src/assets/fabrics/uv.png',
+      name: 'Light Beige'
+    }
+  },
+
+  // Add button fabric assets mapping
+  buttonFabrics: {
+    'button-fabric1': {
+      color: './src/assets/fabrics/color2.png',
+      normal: './src/assets/fabrics/uv2.png',
+      name: 'Charcoal Grey'
+    },
+    'button-fabric2': {
+      color: './src/assets/fabrics/color.jpeg',
+      normal: './src/assets/fabrics/uv.png',
+      name: 'Light Beige'
+    }
+  },
+
+  // Add lining fabric assets mapping
+  liningFabrics: {
+    'lining-fabric1': {
+      color: './src/assets/fabrics/color2.png',
+      normal: './src/assets/fabrics/uv2.png',
+      name: 'Charcoal Grey'
+    },
+    'lining-fabric2': {
+      color: './src/assets/fabrics/color.jpeg',
+      normal: './src/assets/fabrics/uv.png',
+      name: 'Light Beige'
+    }
   }
 };
 
@@ -86,10 +128,11 @@ function initThree() {
     antialias: true,
     preserveDrawingBuffer: true,
     powerPreference: "high-performance",
-    stencil: false,
-    depth: true,
-    precision: "highp"
   });
+  // renderer.toneMapping = THREE.CineonToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.gammaInput = true;
+  renderer.gammaOutput = true;
   renderer.setSize(window.innerWidth - 350, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -103,6 +146,10 @@ function initThree() {
   // Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambientLight);
+
+  backLight = new THREE.DirectionalLight(0xffffff, 1);
+  scene.add(backLight);
+  backLight.position.set(10, 0, 10);
 
   // Create directional light that will follow camera with offset
   cameraFollowLight = new THREE.DirectionalLight(0xffffff, 3.9);
@@ -123,58 +170,24 @@ function initThree() {
   suitGroup = new THREE.Group();
   scene.add(suitGroup);
 
-  // Initialize GUI
-  initGUI();
+  // Remove GUI initialization
+  // initGUI();
 
   animate();
 }
 
-function initGUI() {
-  gui = new dat.GUI();
-
-  // Create a folder for light controls
-  const lightFolder = gui.addFolder('Camera Follow Light');
-
-  // Add controls for light offset
-  lightFolder.add(lightOffset, 'x', -20, 20, 0.1).name('Offset X').onChange(() => {
-    // The offset will be applied in the animate function
-  });
-
-  lightFolder.add(lightOffset, 'y', -20, 20, 0.1).name('Offset Y').onChange(() => {
-    // The offset will be applied in the animate function
-  });
-
-  lightFolder.add(lightOffset, 'z', -20, 20, 0.1).name('Offset Z').onChange(() => {
-    // The offset will be applied in the animate function
-  });
-
-  // Add control for light intensity
-  lightFolder.add(cameraFollowLight, 'intensity', 0, 5, 0.1).name('Intensity');
-
-  // Open the folder by default
-  lightFolder.open();
-
-  // Position the GUI in a good location
-  gui.domElement.style.position = 'absolute';
-  gui.domElement.style.top = '10px';
-  gui.domElement.style.right = '10px';
-}
+// Remove the entire initGUI function
 
 function animate() {
   if (cameraFollowLight) {
-    // Calculate offset position relative to camera using GUI values
     const offset = new THREE.Vector3(lightOffset.x, lightOffset.y, lightOffset.z);
+    offset.applyQuaternion(camera.quaternion);
     cameraFollowLight.position.copy(camera.position).add(offset);
-
-    // Update the shadow camera to match the new light position
-    cameraFollowLight.shadow.camera.updateProjectionMatrix();
-
-    // Optionally, you can also update the light's target to always point at the center
-    cameraFollowLight.lookAt(0, 0, 0);
+    if (suitGroup) {
+      cameraFollowLight.target.position.copy(suitGroup.position);
+      cameraFollowLight.target.updateMatrixWorld();
+    }
   }
-
-  console.log("cameraFollowLight", cameraFollowLight.position);
-  console.log("camera position", camera.position);
 
   requestAnimationFrame(animate);
   composer.render();
@@ -228,7 +241,7 @@ async function storeTopLevelGroups(root) {
 
     // Updated to pass both color and normal textures
     loadAndApplyFabric(fabric1, fabric2uv, {
-      repeat: [50, 50],
+      repeat: [20, 20],
     });
 
     console.log("Top-level groups:", loadedMeshes);
@@ -291,6 +304,9 @@ function applyDefaultConfig() {
   updateLinings(); // Remove parameter, let it determine dynamically
   updateVent();
   updateButtonholeLapelPosition(CONFIG.defaults.buttonholeLapelPosition);
+  updateFabric(CONFIG.defaults.fabric); // Add fabric update
+  updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
+  updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
 }
 
 
@@ -348,8 +364,6 @@ function updateFront() {
 }
 
 function updateShoulders(styleKey) {
-
-  console.log("updateShoulders", styleKey);
   const shoulderMap = {
     Structured: 'Structured',
     Unconstructed: '_Unconstructed',
@@ -376,9 +390,6 @@ function updateShoulders(styleKey) {
 
   // Make Natural_Shoulder visible
   naturalShoulder.visible = true;
-
-  // Get the target variant name
-  console.log("styleKey", shoulderMap[styleKey]);
   const variantName = shoulderMap[styleKey] || 'Structured';
 
   // Hide all variants first, then show only the target one
@@ -414,13 +425,9 @@ function martingaleBelt(styleKey, visibility = true) {
 }
 
 function invertedBoxPleat(styleKey, visibility = true) {
-  console.log("invertedBoxPleat", styleKey, visibility);
   currentInvertedBoxPleat = styleKey;
 
   const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
-
-  console.log("buttoningConfig", buttoningConfig);
-  console.log("styleKey", styleKey);
 
   const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
 
@@ -444,9 +451,7 @@ function invertedBoxPleat(styleKey, visibility = true) {
     console.warn(`Unsupported buttoning type for inverted box pleat: ${buttoningConfig}`);
     return;
   }
-  console.log("pleatKey", pleatKey);
   const targetPleatVariant = pleatVariantMap[pleatKey];
-  console.log("targetPleatVariant", targetPleatVariant);
   if (targetPleatVariant) {
     updateVariant('Inverted_Box_Pleat', targetPleatVariant, true, visibility);
   } else {
@@ -490,8 +495,6 @@ function updateSleeveDesign(styleKey) {
   } else if (styleKey === 'un-cuffed') {
     updateVariant('sleave_buttons', 'none', true);
   }
-
-  console.log("sleeveDesignMap", loadedMeshes);
 
   currentSleeveDesign = styleKey;
   updateVariant('Sleeve_design', sleeveDesignMap[styleKey]);
@@ -540,14 +543,8 @@ function updateVent() {
   const martingaleBeltValue = currentMartingaleBelt || CONFIG.defaults.martingaleBelt;
   const invertedBoxPleatValue = currentInvertedBoxPleat || CONFIG.defaults.invertedBoxPleat;
 
-  console.log("buttoningConfig", buttoningConfig);
-  console.log("shoulderConfig", shoulderConfig);
-  console.log("martingaleBeltValue", martingaleBeltValue);
-  console.log("invertedBoxPleatValue", invertedBoxPleatValue);
-
   // Check constraint: if both martingale belt and inverted pleat are true, show no vent
   if (martingaleBeltValue === true && invertedBoxPleatValue === true) {
-    console.log("Both martingale belt and inverted pleat are true, hiding vent");
     updateVariant('vent', "none");
     currentVent = "none";
     return;
@@ -575,8 +572,6 @@ function updateVent() {
 
   const targetVentVariant = ventMap[ventKey];
   currentVent = shoulderConfig;
-  console.log("ventKey", ventKey);
-  console.log("targetVentVariant", targetVentVariant);
 
   if (targetVentVariant) {
     updateVariant('vent', targetVentVariant);
@@ -737,6 +732,11 @@ function getCurrentConfig() {
     }
   });
 
+  // Add fabric configurations
+  config.fabric = CONFIG.defaults.fabric;
+  config.buttonFabric = CONFIG.defaults.buttonFabric;
+  config.liningFabric = CONFIG.defaults.liningFabric;
+
   // Also include the current global variables for completeness
   config.currentButtoning = currentButtoning;
   config.currentLapelStyle = currentLapelStyle;
@@ -790,7 +790,19 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
 
       // Apply fabric if both textures are loaded
       if (colorTextureLoaded && normalTextureLoaded) {
+        // Apply to main fabric areas
         applyFabricToModel(colorTexture, normalTexture, materialOptions);
+
+        // Apply to specific components
+        applyFabricToLapels(colorTexture, normalTexture, materialOptions);
+        applyFabricToLinings(colorTexture, normalTexture, materialOptions);
+
+        // Apply button materials
+        applyMaterialToButtons({
+          color: 0x8B4513, // Brown color for buttons
+          metalness: 0.8,
+          roughness: 0.2,
+        });
       }
     },
     undefined,
@@ -813,7 +825,19 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
 
       // Apply fabric if both textures are loaded
       if (colorTextureLoaded && normalTextureLoaded) {
+        // Apply to main fabric areas
         applyFabricToModel(colorTexture, normalTexture, materialOptions);
+
+        // Apply to specific components
+        applyFabricToLapels(colorTexture, normalTexture, materialOptions);
+        applyFabricToLinings(colorTexture, normalTexture, materialOptions);
+
+        // Apply button materials
+        applyMaterialToButtons({
+          color: 0x8B4513, // Brown color for buttons
+          metalness: 0.8,
+          roughness: 0.2,
+        });
       }
     },
     undefined,
@@ -824,38 +848,273 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
 }
 
 /**
- * Apply fabric material to all meshes except buttons
+ * Apply fabric material to lapels only
+ * @param {THREE.Texture} colorTexture - The fabric color texture to apply
+ * @param {THREE.Texture} normalTexture - The fabric normal texture to apply
+ * @param {Object} materialOptions - Additional material properties
+ */
+function applyFabricToLapels(colorTexture, normalTexture, materialOptions = {}) {
+  if (!suitGroup) return;
+
+  const lapelKeywords = [
+    'lapel', 'noatch', 'Peak', 'notchpeak'
+  ];
+
+  function isLapelMesh(meshName) {
+    if (!meshName) return false;
+    const lowerName = meshName.toLowerCase();
+    return lapelKeywords.some(keyword => lowerName.includes(keyword.toLowerCase()));
+  }
+
+  function isLapelGroup(mesh) {
+    if (isLapelMesh(mesh.name)) return true;
+
+    let parent = mesh.parent;
+    while (parent) {
+      if (isLapelMesh(parent.name)) return true;
+      parent = parent.parent;
+    }
+    return false;
+  }
+
+  function applyTexturesToLapelMesh(mesh) {
+    if (mesh.isMesh && mesh.material && isLapelGroup(mesh)) {
+
+      mesh.material.map = colorTexture;
+      mesh.material.normalMap = normalTexture;
+      mesh.material.normalMap.needsUpdate = true;
+
+      colorTexture.encoding = THREE.sRGBEncoding;
+
+      mesh.material.polygonOffset = true;
+      mesh.material.polygonOffsetFactor = 1;
+      mesh.material.polygonOffsetUnits = 1;
+
+      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+      colorTexture.anisotropy = maxAnisotropy;
+      normalTexture.anisotropy = maxAnisotropy;
+
+      colorTexture.generateMipmaps = true;
+      colorTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      colorTexture.magFilter = THREE.LinearFilter;
+
+      normalTexture.generateMipmaps = true;
+      normalTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      normalTexture.magFilter = THREE.LinearFilter;
+
+      mesh.material.depthWrite = true;
+      mesh.material.depthTest = true;
+      mesh.material.roughness = 1;
+      mesh.material.metalness = 0.5;
+
+      const repeatX = materialOptions.repeat?.[0] || 10;
+      const repeatY = materialOptions.repeat?.[1] || 10;
+
+      colorTexture.repeat.set(repeatX, repeatY);
+      mesh.material.needsUpdate = true;
+    }
+  }
+
+  suitGroup.traverse((child) => {
+    applyTexturesToLapelMesh(child);
+  });
+}
+
+/**
+ * Apply fabric material to linings only
+ * @param {THREE.Texture} colorTexture - The fabric color texture to apply
+ * @param {THREE.Texture} normalTexture - The fabric normal texture to apply
+ * @param {Object} materialOptions - Additional material properties
+ */
+function applyFabricToLinings(colorTexture, normalTexture, materialOptions = {}) {
+  if (!suitGroup) return;
+
+  const liningKeywords = [
+    'lining', 'LiningSleeve'
+  ];
+
+  function isLiningMesh(meshName) {
+    if (!meshName) return false;
+    const lowerName = meshName.toLowerCase();
+    return liningKeywords.some(keyword => lowerName.includes(keyword.toLowerCase()));
+  }
+
+  function isLiningGroup(mesh) {
+    if (isLiningMesh(mesh.name)) return true;
+
+    let parent = mesh.parent;
+    while (parent) {
+      if (isLiningMesh(parent.name)) return true;
+      parent = parent.parent;
+    }
+    return false;
+  }
+
+  function applyTexturesToLiningMesh(mesh) {
+    if (mesh.isMesh && mesh.material && isLiningGroup(mesh)) {
+
+      mesh.material.map = colorTexture;
+      mesh.material.normalMap = normalTexture;
+      mesh.material.normalMap.needsUpdate = true;
+
+      colorTexture.encoding = THREE.sRGBEncoding;
+
+      mesh.material.polygonOffset = true;
+      mesh.material.polygonOffsetFactor = 1;
+      mesh.material.polygonOffsetUnits = 1;
+
+      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+      colorTexture.anisotropy = maxAnisotropy;
+      normalTexture.anisotropy = maxAnisotropy;
+
+      colorTexture.generateMipmaps = true;
+      colorTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      colorTexture.magFilter = THREE.LinearFilter;
+
+      normalTexture.generateMipmaps = true;
+      normalTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      normalTexture.magFilter = THREE.LinearFilter;
+
+      mesh.material.depthWrite = true;
+      mesh.material.depthTest = true;
+      mesh.material.roughness = 1;
+      mesh.material.metalness = 0.5;
+
+      const repeatX = materialOptions.repeat?.[0] || 10;
+      const repeatY = materialOptions.repeat?.[1] || 10;
+
+      colorTexture.repeat.set(repeatX, repeatY);
+      mesh.material.needsUpdate = true;
+    }
+  }
+
+  suitGroup.traverse((child) => {
+    applyTexturesToLiningMesh(child);
+  });
+
+}
+
+/**
+ * Apply specific material to buttons only
+ * @param {Object} materialOptions - Material properties for buttons
+ */
+function applyMaterialToButtons(materialOptions = {}) {
+  if (!suitGroup) return;
+
+  const buttonKeywords = [
+    'buttons.004', 'buttons005', 'belt_buttons', 'pleat_button',
+    'lapel_left_button', 'lapel_right_button',
+    'sec_strap', 'one_strap',
+    'Buttons', '2_Buttons', '6_buttons',
+    'belt_buttons', 'pleat_buttons', 'sleave_buttons',
+    'sec_strap', 'one_strap_button',
+    'notch_lapel_left_button', 'notch_lapel_right_button',
+    'peak_left_button', 'peak_right_button',
+    'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'
+  ];
+
+  function isButtonMesh(meshName) {
+    if (!meshName) return false;
+    const lowerName = meshName.toLowerCase();
+    return buttonKeywords.some(keyword => lowerName.includes(keyword.toLowerCase()));
+  }
+
+  function isButtonGroup(mesh) {
+    if (isButtonMesh(mesh.name)) return true;
+
+    let parent = mesh.parent;
+    while (parent) {
+      if (isButtonMesh(parent.name)) return true;
+      parent = parent.parent;
+    }
+    return false;
+  }
+
+  function applyMaterialToButtonMesh(mesh) {
+    if (mesh.isMesh && mesh.material && isButtonGroup(mesh)) {
+      const buttonMaterial = new THREE.MeshStandardMaterial({
+        color: materialOptions.color || 0x8B4513,
+        metalness: materialOptions.metalness || 0.8,
+        roughness: materialOptions.roughness || 0.2,
+        envMapIntensity: materialOptions.envMapIntensity || 1.0,
+      });
+
+      mesh.material = buttonMaterial;
+      mesh.material.needsUpdate = true;
+
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    }
+  }
+
+  suitGroup.traverse((child) => {
+    applyMaterialToButtonMesh(child);
+  });
+}
+
+/**
+ * Apply fabric material to all components except buttons
  * @param {THREE.Texture} colorTexture - The fabric color texture to apply
  * @param {THREE.Texture} normalTexture - The fabric normal texture to apply
  * @param {Object} materialOptions - Additional material properties
  */
 function applyFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
-  // Define button-related keywords to exclude
+  // Enhanced button exclusion keywords based on your mesh hierarchy
   const buttonKeywords = [
-    'button', 'Button', 'BUTTON',
+    // Existing keywords
+    'buttons.004', 'buttons005', 'belt_buttons', 'pleat_button',
     'lapel_left_button', 'lapel_right_button',
-    'belt_buttons', 'one_strap_button', 'pleat_buttons',
-    'sec_strap', 'one_strap'
+    'sec_strap', 'one_strap',
+
+    // Additional keywords based on your mesh structure
+    'Buttons', // The main Buttons group
+    '2_Buttons', '6_buttons', // Button variants
+    'belt_buttons', 'pleat_buttons', // Additional button types
+    'sleave_buttons', // Sleeve buttons
+    'sec_strap', 'one_strap_button', // Strap buttons
+    'notch_lapel_left_button', 'notch_lapel_right_button', // Lapel buttons
+    'peak_left_button', 'peak_right_button', // Peak lapel buttons
+    'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button' // Notchpeak buttons
   ];
 
-  // Function to check if a mesh name contains button keywords
+  // Enhanced function to check if a mesh name contains button keywords
   function isButtonMesh(meshName) {
+    if (!meshName) return false;
+
+    const lowerName = meshName.toLowerCase();
     return buttonKeywords.some(keyword =>
-      meshName.toLowerCase().includes(keyword.toLowerCase())
+      lowerName.includes(keyword.toLowerCase())
     );
+  }
+
+  // Enhanced function to check if a mesh is part of a button group
+  function isButtonGroup(mesh) {
+    // Check if the mesh itself is a button
+    if (isButtonMesh(mesh.name)) return true;
+
+    // Check if any parent is a button group
+    let parent = mesh.parent;
+    while (parent) {
+      if (isButtonMesh(parent.name)) return true;
+      parent = parent.parent;
+    }
+
+    return false;
   }
 
   // Function to apply textures to a mesh's existing material if it's not a button
   function applyTexturesToMesh(mesh) {
     if (mesh.isMesh && mesh.material) {
-      if (!isButtonMesh(mesh.name)) {
+
+      // Use the enhanced button detection
+      if (!isButtonGroup(mesh)) {
 
         // mesh.castShadow = true;
         // mesh.receiveShadow = true;
 
         mesh.material.map = colorTexture;
-        mesh.material.normal = normalTexture;
-        mesh.material.normalScale.set(1, 1);
+        mesh.material.normalMap = normalTexture;
+        mesh.material.normalMap.needsUpdate = true;
 
         colorTexture.encoding = THREE.sRGBEncoding;
 
@@ -880,20 +1139,22 @@ function applyFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
 
         mesh.material.roughness = 1;
         mesh.material.metalness = 0.5;
-        mesh.material.normalScale.set(50, 50);
+        // mesh.material.normalScale.set(10, 10);
         mesh.material.needsUpdate = true;
 
-        const repeatX = materialOptions.repeat?.[0] || 50;
-        const repeatY = materialOptions.repeat?.[1] || 50;
+        const repeatX = materialOptions.repeat?.[0] || 10;
+        const repeatY = materialOptions.repeat?.[1] || 10;
 
         colorTexture.repeat.set(repeatX, repeatY);
-        normalTexture.repeat.set(repeatX, repeatY);
+        // normalTexture.repeat.set(repeatX, repeatY);
 
         // Enable shadow casting and receiving
         // mesh.receiveShadow = true;
         // mesh.castShadow = true;
 
         mesh.material.needsUpdate = true;
+      } else {
+        // console.log("Skipping button mesh:", mesh.name);
       }
     }
   }
@@ -904,8 +1165,90 @@ function applyFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
       applyTexturesToMesh(child);
     });
   }
+}
 
-  console.log('Fabric textures applied to existing materials (excluding buttons)');
+// Add fabric update function
+function updateFabric(fabricKey) {
+  const fabricConfig = CONFIG.fabrics[fabricKey];
+  if (!fabricConfig) {
+    console.warn(`Fabric configuration not found for: ${fabricKey}`);
+    return;
+  }
+
+  // Load and apply the new fabric
+  loadAndApplyFabric(fabricConfig.color, fabricConfig.normal, {
+    repeat: [20, 20],
+  });
+
+  // Update UI to show selected fabric
+  updateFabricSelectionUI(fabricKey);
+}
+
+// Add function to update fabric selection UI
+function updateFabricSelectionUI(selectedFabric) {
+  const fabricOptions = document.querySelectorAll('.fabric-option');
+  fabricOptions.forEach(option => {
+    option.classList.remove('selected');
+    if (option.dataset.fabric === selectedFabric) {
+      option.classList.add('selected');
+    }
+  });
+}
+
+// Add button fabric update function
+function updateButtonFabric(fabricKey) {
+  const fabricConfig = CONFIG.buttonFabrics[fabricKey];
+  if (!fabricConfig) {
+    console.warn(`Button fabric configuration not found for: ${fabricKey}`);
+    return;
+  }
+
+  // Load and apply the new button fabric
+  loadAndApplyButtonFabric(fabricConfig.color, fabricConfig.normal, {
+    repeat: [20, 20],
+  });
+
+  // Update UI to show selected button fabric
+  updateButtonFabricSelectionUI(fabricKey);
+}
+
+// Add lining fabric update function
+function updateLiningFabric(fabricKey) {
+  const fabricConfig = CONFIG.liningFabrics[fabricKey];
+  if (!fabricConfig) {
+    console.warn(`Lining fabric configuration not found for: ${fabricKey}`);
+    return;
+  }
+
+  // Load and apply the new lining fabric
+  loadAndApplyLiningFabric(fabricConfig.color, fabricConfig.normal, {
+    repeat: [20, 20],
+  });
+
+  // Update UI to show selected lining fabric
+  updateLiningFabricSelectionUI(fabricKey);
+}
+
+// Add function to update button fabric selection UI
+function updateButtonFabricSelectionUI(selectedFabric) {
+  const fabricOptions = document.querySelectorAll('[data-fabric^="button-fabric"]');
+  fabricOptions.forEach(option => {
+    option.classList.remove('selected');
+    if (option.dataset.fabric === selectedFabric) {
+      option.classList.add('selected');
+    }
+  });
+}
+
+// Add function to update lining fabric selection UI
+function updateLiningFabricSelectionUI(selectedFabric) {
+  const fabricOptions = document.querySelectorAll('[data-fabric^="lining-fabric"]');
+  fabricOptions.forEach(option => {
+    option.classList.remove('selected');
+    if (option.dataset.fabric === selectedFabric) {
+      option.classList.add('selected');
+    }
+  });
 }
 
 // ----- Update Vent Options Based on Martingale Belt and Inverted Box Pleat -----
@@ -955,9 +1298,6 @@ function handleConfigChange(event) {
   const configType = event.target.id.replace('-select', '');
   const value = event.target.value;
   CONFIG.defaults[configType] = value;
-
-  console.log("configType", configType)
-  console.log("value", value)
 
   if (configType === 'buttoning') {
     updateButtoning(value);
@@ -1038,6 +1378,24 @@ function handleConfigChange(event) {
   }
 }
 
+// Add fabric change handler
+function handleFabricChange(fabricKey) {
+  CONFIG.defaults.fabric = fabricKey;
+  updateFabric(fabricKey);
+}
+
+// Add button fabric change handler
+function handleButtonFabricChange(fabricKey) {
+  CONFIG.defaults.buttonFabric = fabricKey;
+  updateButtonFabric(fabricKey);
+}
+
+// Add lining fabric change handler
+function handleLiningFabricChange(fabricKey) {
+  CONFIG.defaults.liningFabric = fabricKey;
+  updateLiningFabric(fabricKey);
+}
+
 // ----- Update Lapel Options Based on Buttoning -----
 function updateLapelOptions(buttoningType) {
   const lapelSelect = document.getElementById('lapel-style-select');
@@ -1072,6 +1430,271 @@ function updateLapelOptions(buttoningType) {
   updateLapelStyle(currentLapelStyle);
 }
 
+/**
+ * Load and apply button fabric textures
+ * @param {string} colorTextureUrl - URL or path to the button fabric color texture
+ * @param {string} normalTextureUrl - URL or path to the button fabric normal texture
+ * @param {Object} materialOptions - Additional material properties
+ */
+function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}) {
+  const textureLoader = new THREE.TextureLoader();
+  let colorTextureLoaded = false;
+  let normalTextureLoaded = false;
+  let colorTexture, normalTexture;
+
+  // Load color texture
+  textureLoader.load(
+    colorTextureUrl,
+    (texture) => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(materialOptions.repeat?.[0] || 5, materialOptions.repeat?.[1] || 5);
+
+      colorTexture = texture;
+      colorTextureLoaded = true;
+
+      if (colorTextureLoaded && normalTextureLoaded) {
+        applyButtonFabricToModel(colorTexture, normalTexture, materialOptions);
+      }
+    },
+    undefined,
+    (error) => {
+      console.error('Error loading button color texture:', error);
+    }
+  );
+
+  // Load normal texture
+  textureLoader.load(
+    normalTextureUrl,
+    (texture) => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(materialOptions.repeat?.[0] || 10, materialOptions.repeat?.[1] || 10);
+
+      normalTexture = texture;
+      normalTextureLoaded = true;
+
+      if (colorTextureLoaded && normalTextureLoaded) {
+        applyButtonFabricToModel(colorTexture, normalTexture, materialOptions);
+      }
+    },
+    undefined,
+    (error) => {
+      console.error('Error loading button normal texture:', error);
+    }
+  );
+}
+
+/**
+ * Load and apply lining fabric textures
+ * @param {string} colorTextureUrl - URL or path to the lining fabric color texture
+ * @param {string} normalTextureUrl - URL or path to the lining fabric normal texture
+ * @param {Object} materialOptions - Additional material properties
+ */
+function loadAndApplyLiningFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}) {
+
+  console.log("loadAndApplyLiningFabric", colorTextureUrl, normalTextureUrl);
+  const textureLoader = new THREE.TextureLoader();
+  let colorTextureLoaded = false;
+  let normalTextureLoaded = false;
+  let colorTexture, normalTexture;
+
+  // Load color texture
+  textureLoader.load(
+    colorTextureUrl,
+    (texture) => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(materialOptions.repeat?.[0] || 5, materialOptions.repeat?.[1] || 5);
+
+      colorTexture = texture;
+      colorTextureLoaded = true;
+
+      if (colorTextureLoaded && normalTextureLoaded) {
+        applyLiningFabricToModel(colorTexture, normalTexture, materialOptions);
+      }
+    },
+    undefined,
+    (error) => {
+      console.error('Error loading lining color texture:', error);
+    }
+  );
+
+  // Load normal texture
+  textureLoader.load(
+    normalTextureUrl,
+    (texture) => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(materialOptions.repeat?.[0] || 10, materialOptions.repeat?.[1] || 10);
+
+      normalTexture = texture;
+      normalTextureLoaded = true;
+
+      if (colorTextureLoaded && normalTextureLoaded) {
+        applyLiningFabricToModel(colorTexture, normalTexture, materialOptions);
+      }
+    },
+    undefined,
+    (error) => {
+      console.error('Error loading lining normal texture:', error);
+    }
+  );
+}
+
+/**
+ * Apply button fabric material to buttons only
+ * @param {THREE.Texture} colorTexture - The button fabric color texture to apply
+ * @param {THREE.Texture} normalTexture - The button fabric normal texture to apply
+ * @param {Object} materialOptions - Additional material properties
+ */
+function applyButtonFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
+  if (!suitGroup) return;
+
+  const buttonKeywords = [
+    'buttons.004', 'buttons005', 'belt_buttons', 'pleat_button',
+    'lapel_left_button', 'lapel_right_button',
+    'sec_strap', 'one_strap',
+    'Buttons', '2_Buttons', '6_buttons',
+    'belt_buttons', 'pleat_buttons', 'sleave_buttons',
+    'sec_strap', 'one_strap_button',
+    'notch_lapel_left_button', 'notch_lapel_right_button',
+    'peak_left_button', 'peak_right_button',
+    'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'
+  ];
+
+  function isButtonMesh(meshName) {
+    if (!meshName) return false;
+    const lowerName = meshName.toLowerCase();
+    return buttonKeywords.some(keyword => lowerName.includes(keyword.toLowerCase()));
+  }
+
+  function isButtonGroup(mesh) {
+    if (isButtonMesh(mesh.name)) return true;
+
+    let parent = mesh.parent;
+    while (parent) {
+      if (isButtonMesh(parent.name)) return true;
+      parent = parent.parent;
+    }
+    return false;
+  }
+
+  function applyTexturesToButtonMesh(mesh) {
+    if (mesh.isMesh && mesh.material && isButtonGroup(mesh)) {
+      mesh.material.map = colorTexture;
+      mesh.material.normalMap = normalTexture;
+      mesh.material.normalMap.needsUpdate = true;
+
+      colorTexture.encoding = THREE.sRGBEncoding;
+
+      mesh.material.polygonOffset = true;
+      mesh.material.polygonOffsetFactor = 1;
+      mesh.material.polygonOffsetUnits = 1;
+
+      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+      colorTexture.anisotropy = maxAnisotropy;
+      normalTexture.anisotropy = maxAnisotropy;
+
+      colorTexture.generateMipmaps = true;
+      colorTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      colorTexture.magFilter = THREE.LinearFilter;
+
+      normalTexture.generateMipmaps = true;
+      normalTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      normalTexture.magFilter = THREE.LinearFilter;
+
+      mesh.material.depthWrite = true;
+      mesh.material.depthTest = true;
+      mesh.material.roughness = 1;
+      mesh.material.metalness = 0.5;
+
+      const repeatX = materialOptions.repeat?.[0] || 10;
+      const repeatY = materialOptions.repeat?.[1] || 10;
+
+      colorTexture.repeat.set(repeatX, repeatY);
+      mesh.material.needsUpdate = true;
+    }
+  }
+
+  suitGroup.traverse((child) => {
+    applyTexturesToButtonMesh(child);
+  });
+}
+
+/**
+ * Apply lining fabric material to linings only
+ * @param {THREE.Texture} colorTexture - The lining fabric color texture to apply
+ * @param {THREE.Texture} normalTexture - The lining fabric normal texture to apply
+ * @param {Object} materialOptions - Additional material properties
+ */
+function applyLiningFabricToModel(colorTexture, normalTexture, materialOptions = {}) {
+  console.log("applyLiningFabricToModel", colorTexture, normalTexture, materialOptions);
+  if (!suitGroup) return;
+
+  const liningKeywords = [
+    'lining', 'LiningSleeve', 'full', 'half', 'LiningSleeve'
+  ];
+
+  function isLiningMesh(meshName) {
+    if (!meshName) return false;
+    const lowerName = meshName.toLowerCase();
+    return liningKeywords.some(keyword => lowerName.includes(keyword.toLowerCase()));
+  }
+
+  function isLiningGroup(mesh) {
+    if (isLiningMesh(mesh.name)) return true;
+
+    let parent = mesh.parent;
+    while (parent) {
+      if (isLiningMesh(parent.name)) return true;
+      parent = parent.parent;
+    }
+    return false;
+  }
+
+  function applyTexturesToLiningMesh(mesh) {
+    if (mesh.isMesh && mesh.material && isLiningGroup(mesh)) {
+      mesh.material.map = colorTexture;
+      mesh.material.normalMap = normalTexture;
+      mesh.material.normalMap.needsUpdate = true;
+
+      colorTexture.encoding = THREE.sRGBEncoding;
+
+      mesh.material.polygonOffset = true;
+      mesh.material.polygonOffsetFactor = 1;
+      mesh.material.polygonOffsetUnits = 1;
+
+      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+      colorTexture.anisotropy = maxAnisotropy;
+      normalTexture.anisotropy = maxAnisotropy;
+
+      colorTexture.generateMipmaps = true;
+      colorTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      colorTexture.magFilter = THREE.LinearFilter;
+
+      normalTexture.generateMipmaps = true;
+      normalTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      normalTexture.magFilter = THREE.LinearFilter;
+
+      mesh.material.depthWrite = true;
+      mesh.material.depthTest = true;
+      mesh.material.roughness = 1;
+      mesh.material.metalness = 0.5;
+
+      const repeatX = materialOptions.repeat?.[0] || 10;
+      const repeatY = materialOptions.repeat?.[1] || 10;
+
+      colorTexture.repeat.set(repeatX, repeatY);
+      mesh.material.needsUpdate = true;
+    }
+  }
+
+  suitGroup.traverse((child) => {
+    applyTexturesToLiningMesh(child);
+  });
+}
+
 // ----- Initialize DOM Selectors & Events -----
 function initConfigUI() {
   const selects = [
@@ -1084,11 +1707,43 @@ function initConfigUI() {
     document.getElementById(domId).addEventListener('change', handleConfigChange);
   });
 
+  // Add main fabric selection event listeners
+  const fabricOptions = document.querySelectorAll('[data-fabric^="fabric"]');
+  fabricOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const fabricKey = option.dataset.fabric;
+      handleFabricChange(fabricKey);
+    });
+  });
+
+  // Add button fabric selection event listeners
+  const buttonFabricOptions = document.querySelectorAll('[data-fabric^="button-fabric"]');
+  buttonFabricOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const fabricKey = option.dataset.fabric;
+      handleButtonFabricChange(fabricKey);
+    });
+  });
+
+  // Add lining fabric selection event listeners
+  const liningFabricOptions = document.querySelectorAll('[data-fabric^="lining-fabric"]');
+  liningFabricOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const fabricKey = option.dataset.fabric;
+      handleLiningFabricChange(fabricKey);
+    });
+  });
+
   // Initialize lapel options based on default buttoning
   updateLapelOptions(CONFIG.defaults.buttoning);
 
   // Initialize vent options based on current martingale belt and inverted box pleat settings
-  updateVentOptions(); // Add this line
+  updateVentOptions();
+
+  // Initialize fabric selection UIs
+  updateFabricSelectionUI(CONFIG.defaults.fabric);
+  updateButtonFabricSelectionUI(CONFIG.defaults.buttonFabric);
+  updateLiningFabricSelectionUI(CONFIG.defaults.liningFabric);
 }
 
 // Utility: camelCase to kebab-case (for matching DOM IDs)
