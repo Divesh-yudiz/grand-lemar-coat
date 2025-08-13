@@ -439,11 +439,16 @@ function invertedBoxPleat(styleKey, visibility = true) {
   // If styleKey is false, simply hide the entire inverted box pleat group
   if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
     updateVariant('Inverted_Box_Pleat', "none", true, false);
+    updateVariant('Buttons', "pleat_buttons", false, false);
     updateVent();
     return;
   }
 
   updateVent();
+
+  if (currentInvertedBoxPleat === "true" || currentInvertedBoxPleat === true) {
+    updateVariant('Buttons', "pleat_buttons", false, true);
+  }
 
   const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
   const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
@@ -555,11 +560,11 @@ function updateLinings(visibility = true) {
 }
 
 function updateVent(ventType) {
-
   if (currentInvertedBoxPleat === "true" || currentInvertedBoxPleat === true) {
+    updateVariant('vent', "none", true, false);
+    updateVariant('no_vent', "none", true, false);
     return;
   }
-  console.log("updateVent", ventType);
   const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
   const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
   const martingaleBeltValue = currentMartingaleBelt || CONFIG.defaults.martingaleBelt;
@@ -569,10 +574,12 @@ function updateVent(ventType) {
   updateVariant('vent', "none", true, false);
   updateVariant('no_vent', "none", true, false);
 
+  console.log("martingaleBeltValue", martingaleBeltValue);
+  console.log("invertedBoxPleatValue", invertedBoxPleatValue);
+  console.log("currentVent", currentVent);
   // If there's a martingale belt or inverted box pleat, show no vent
-  if (martingaleBeltValue === true || invertedBoxPleatValue === true) {
-    console.log("Martingale belt or inverted pleat is true - showing no vent");
-
+  if (currentVent === "none" && (invertedBoxPleatValue === "false" || invertedBoxPleatValue === false)) {
+    console.log("checkpoint 1")
     // Create the key for no vent based on buttoning and shoulder
     const noVentKey = buttoningConfig === 'single_breasted_2' ?
       `2Button_${shoulderConfig}` :
@@ -589,7 +596,6 @@ function updateVent(ventType) {
 
     const targetNoVentVariant = noVentMap[noVentKey];
     if (targetNoVentVariant) {
-      console.log("Showing no vent variant:", targetNoVentVariant);
       updateVariant('no_vent', targetNoVentVariant, true, true);
     } else {
       console.warn(`No no-vent variant found for: ${noVentKey}`);
@@ -599,15 +605,15 @@ function updateVent(ventType) {
     return;
   }
 
-  console.log("martingaleBeltValue", martingaleBeltValue);
-  console.log("invertedBoxPleatValue", invertedBoxPleatValue);
-
   // Only show vent options when there's no martingale belt and no inverted box pleat
-  if (martingaleBeltValue === "false" && invertedBoxPleatValue === "false") {
+  if (invertedBoxPleatValue === "false" || invertedBoxPleatValue === false) {
+    console.log("checkpoint 2")
     // Get the vent type from UI config (ventType parameter or current selection)
+    console.log("currentVent", currentVent);
     const selectedVentType = ventType || getConfigValue('vent') || CONFIG.defaults.vent;
-
+    console.log("selectedVentType", selectedVentType);
     if (selectedVentType === 'single') {
+      console.log("checkpoint 3")
       // Show single vent with appropriate variant based on buttoning and shoulder
       const ventKey = buttoningConfig === 'single_breasted_2' ?
         `2Button_${shoulderConfig}` :
@@ -625,7 +631,6 @@ function updateVent(ventType) {
       const targetVentVariant = ventMap[ventKey];
 
       if (targetVentVariant) {
-        console.log("Showing single vent:", targetVentVariant);
         updateVariant('vent', targetVentVariant, true, true);
         currentVent = "single";
       } else {
@@ -634,6 +639,7 @@ function updateVent(ventType) {
         currentVent = "none";
       }
     } else if (selectedVentType === 'none') {
+      console.log("checkpoint 4")
       // Show appropriate no vent variant based on buttoning and shoulder
       const noVentKey = buttoningConfig === 'single_breasted_2' ?
         `2Button_${shoulderConfig}` :
@@ -650,7 +656,6 @@ function updateVent(ventType) {
 
       const targetNoVentVariant = noVentMap[noVentKey];
       if (targetNoVentVariant) {
-        console.log("Showing no vent variant:", targetNoVentVariant);
         updateVariant('no_vent', targetNoVentVariant, true, true);
       } else {
         console.warn(`No no-vent variant found for: ${noVentKey}`);
@@ -978,7 +983,6 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
 
 // Add fabric update function
 function updateFabric(fabricKey) {
-  console.log("Updating fabric", fabricKey);
   const fabricConfig = CONFIG.fabrics[fabricKey];
   if (!fabricConfig) {
     console.warn(`❌ Fabric configuration not found for: ${fabricKey}`);
@@ -1113,16 +1117,8 @@ function handleConfigChange(event) {
     updateButtoning(value);
     updateLapelOptions(value);
     updateFront();
-    if (value === 'single_breasted_2') {
-      updateVent();
-      invertedBoxPleat();
-    } else if (value === 'double_breasted_6') {
-      invertedBoxPleat(CONFIG.defaults.invertedBoxPleat);
-      const ventGroup = loadedMeshes['vent'];
-      if (ventGroup) {
-        ventGroup.visible = false;
-      }
-    }
+    updateVent();
+    invertedBoxPleat();
     updateLinings();
     const currentMartingaleBelt = getConfigValue('martingaleBelt');
     martingaleBelt(currentMartingaleBelt, currentMartingaleBelt);
@@ -1146,6 +1142,7 @@ function handleConfigChange(event) {
 
   if (configType === 'inverted-box-pleat') {
     currentInvertedBoxPleat = value;
+    console.log("currentInvertedBoxPleat", currentInvertedBoxPleat);
     invertedBoxPleat(value);
     updateVent();
     updateVentOptions(); // Add this line
@@ -1153,8 +1150,7 @@ function handleConfigChange(event) {
 
   if (configType === 'vent') {
     currentVent = value;
-    console.log("vent", value);
-    // If vent is selected, hide the inverted box pleat
+    console.log("currentVent", currentVent);
     if (value === 'single') {
       updateVent('single');
     } else if (value === 'none') {
@@ -1166,6 +1162,7 @@ function handleConfigChange(event) {
     const isVisible = value === 'true';
     currentMartingaleBelt = value;
     martingaleBelt(value, isVisible);
+
     updateVent();
     updateVentOptions(); // Add this line
   }
