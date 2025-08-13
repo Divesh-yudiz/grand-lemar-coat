@@ -331,7 +331,7 @@ function updateButtoning(styleKey, toggle = true, visibility = true) {
   const buttoningMap = {
     single_breasted_2: '2_Buttons',
     double_breasted_6: '6_buttons',
-    belt_buttons: 'belt_buttons',
+    belt_buttons: 'belt_button',
     one_strap: 'one_strap_button',
     pleat_buttons: 'pleat_buttons',
     sec_strap: 'sec_strap'
@@ -419,8 +419,11 @@ function martingaleBelt(styleKey, visibility = true) {
   const ButtonsGroup = loadedMeshes['Buttons'];
   if (ButtonsGroup) {
     ButtonsGroup.traverse((child) => {
-      if (child.name === "belt_buttons") {
+      if (child.name === "belt_button" || child.name === "belt_buttons") {
         child.visible = visibility;
+        child.traverse((subChild) => {
+          subChild.visible = visibility;
+        });
       }
     });
   }
@@ -429,15 +432,18 @@ function martingaleBelt(styleKey, visibility = true) {
 }
 
 function invertedBoxPleat(styleKey, visibility = true) {
-  console.log("invertedBoxPleat", styleKey);
-  currentInvertedBoxPleat = styleKey;
+
+  if (styleKey == "false" || styleKey == false || styleKey == "true" || styleKey == true) {
+    currentInvertedBoxPleat = styleKey;
+  }
   // If styleKey is false, simply hide the entire inverted box pleat group
-  if (styleKey == "false" || styleKey == false) {
-    console.log("invertedBoxPleat", styleKey);
+  if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
     updateVariant('Inverted_Box_Pleat', "none", true, false);
     updateVent();
     return;
   }
+
+  updateVent();
 
   const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
   const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
@@ -1109,7 +1115,7 @@ function handleConfigChange(event) {
     updateFront();
     if (value === 'single_breasted_2') {
       updateVent();
-      invertedBoxPleat(true);
+      invertedBoxPleat();
     } else if (value === 'double_breasted_6') {
       invertedBoxPleat(CONFIG.defaults.invertedBoxPleat);
       const ventGroup = loadedMeshes['vent'];
