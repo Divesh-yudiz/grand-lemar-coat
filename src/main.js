@@ -8,6 +8,8 @@ import fabric1 from './assets/fabrics/color2.png';
 import uv1 from './assets/fabrics/uv2.png';
 import fabric2 from './assets/fabrics/color.jpeg';
 import uv2 from './assets/fabrics/uv.png';
+import buttonFabric1 from './assets/fabrics/button1.png';
+import buttonFabric2 from './assets/fabrics/button2.png';
 
 // ----- Global Variables -----
 let scene, camera, renderer, controls, suitGroup, composer, renderPass;
@@ -82,14 +84,14 @@ const CONFIG = {
   // Add button fabric assets mapping
   buttonFabrics: {
     'button-fabric1': {
-      color: fabric1,
-      normal: uv1,
-      name: 'Charcoal Grey'
+      color: buttonFabric1,
+      normal: '',
+      name: 'Button Fabric 1'
     },
     'button-fabric2': {
-      color: fabric2,
-      normal: uv2,
-      name: 'Light Beige'
+      color: buttonFabric2,
+      normal: '',
+      name: 'Button Fabric 2'
     }
   },
 
@@ -309,8 +311,8 @@ function applyDefaultConfig() {
   updateVent();
   updateButtonholeLapelPosition(CONFIG.defaults.buttonholeLapelPosition);
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
-  // updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
-  // updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
+  updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
+  updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
 }
 
 
@@ -888,7 +890,9 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
 
   // Configure both textures
   configureTexture(colorTexture);
-  configureTexture(normalTexture);
+  if (normalTexture) {
+    configureTexture(normalTexture);
+  }
 
   // Function to check if a mesh belongs to target groups
   function isTargetGroup(mesh) {
@@ -919,8 +923,10 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
   function applyTexturesToMesh(mesh) {
     if (mesh.isMesh && mesh.material && isInTargetGroup(mesh)) {
       mesh.material.map = colorTexture;
-      mesh.material.normalMap = normalTexture;
-      mesh.material.normalMap.needsUpdate = true;
+      if (normalTexture) {
+        mesh.material.normalMap = normalTexture;
+        mesh.material.normalMap.needsUpdate = true;
+      }
 
       mesh.material.polygonOffset = true;
       mesh.material.polygonOffsetFactor = 1;
@@ -1018,15 +1024,17 @@ function updateFabricSelectionUI(selectedFabric) {
 
 // Add button fabric update function
 function updateButtonFabric(fabricKey) {
+  console.log("updateButtonFabric", fabricKey);
   const fabricConfig = CONFIG.buttonFabrics[fabricKey];
+  console.log("fabricConfig", fabricConfig);
   if (!fabricConfig) {
     console.warn(`❌ Button fabric configuration not found for: ${fabricKey}`);
     return;
   }
 
   // Load and apply the new button fabric
-  loadAndApplyButtonFabric(fabricConfig.color, fabricConfig.normal, {
-    repeat: [20, 20],
+  loadAndApplyButtonFabric(fabricConfig.color, null, {
+    repeat: [1, 1],
   });
 
   // Update UI to show selected button fabric
@@ -1260,6 +1268,7 @@ function updateLapelOptions(buttoningType) {
  * @param {Object} materialOptions - Additional material properties
  */
 function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}) {
+  console.log("loadAndApplyButtonFabric", colorTextureUrl, normalTextureUrl);
   const textureLoader = new THREE.TextureLoader();
   let colorTextureLoaded = false;
   let normalTextureLoaded = false;
@@ -1272,8 +1281,8 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
       colorTexture = texture;
       colorTextureLoaded = true;
 
-      if (colorTextureLoaded && normalTextureLoaded) {
-        applyTexturesToGroups(colorTexture, normalTexture, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_left_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
+      if (colorTextureLoaded) {
+        applyTexturesToGroups(colorTexture, null, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_left_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
       }
     },
     undefined,
@@ -1282,22 +1291,24 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
     }
   );
 
-  // Load normal texture
-  textureLoader.load(
-    normalTextureUrl,
-    (texture) => {
-      normalTexture = texture;
-      normalTextureLoaded = true;
+  if (normalTextureUrl !== null) {
+    // Load normal texture
+    textureLoader.load(
+      normalTextureUrl,
+      (texture) => {
+        normalTexture = texture;
+        normalTextureLoaded = true;
 
-      if (colorTextureLoaded && normalTextureLoaded) {
-        applyTexturesToGroups(colorTexture, normalTexture, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_left_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
+        if (colorTextureLoaded && normalTextureLoaded) {
+          applyTexturesToGroups(colorTexture, normalTexture, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_left_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
+        }
+      },
+      undefined,
+      (error) => {
+        console.error('❌ Error loading button normal texture:', error);
       }
-    },
-    undefined,
-    (error) => {
-      console.error('❌ Error loading button normal texture:', error);
-    }
-  );
+    );
+  }
 }
 
 /**
