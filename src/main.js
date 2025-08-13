@@ -433,21 +433,27 @@ function martingaleBelt(styleKey, visibility = true) {
 
 function invertedBoxPleat(styleKey, visibility = true) {
 
+  function updatePleatButtons(visibility) {
+    const pleatButtonsGroup = loadedMeshes['Buttons'];
+    pleatButtonsGroup.traverse((child) => {
+      if (child.name === "pleat_buttons") {
+        child.visible = visibility;
+        child.traverse((subChild) => {
+          subChild.visible = visibility;
+        });
+      }
+    });
+  }
+
   if (styleKey == "false" || styleKey == false || styleKey == "true" || styleKey == true) {
     currentInvertedBoxPleat = styleKey;
   }
-  // If styleKey is false, simply hide the entire inverted box pleat group
+
   if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
     updateVariant('Inverted_Box_Pleat', "none", true, false);
-    updateVariant('Buttons', "pleat_buttons", false, false);
+    updatePleatButtons(false);
     updateVent();
     return;
-  }
-
-  updateVent();
-
-  if (currentInvertedBoxPleat === "true" || currentInvertedBoxPleat === true) {
-    updateVariant('Buttons', "pleat_buttons", false, true);
   }
 
   const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
@@ -475,6 +481,7 @@ function invertedBoxPleat(styleKey, visibility = true) {
   }
   const targetPleatVariant = pleatVariantMap[pleatKey];
   if (targetPleatVariant) {
+    updatePleatButtons(true);
     updateVariant('Inverted_Box_Pleat', targetPleatVariant, true, visibility);
   } else {
     console.warn(`No pleat variant found for buttoning: ${buttoningConfig}, shoulder: ${shoulderConfig}`);

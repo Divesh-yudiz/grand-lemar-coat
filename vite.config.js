@@ -13,6 +13,8 @@ export default defineConfig({
         }
     },
     server: {
+        port: 3000, // Add your desired port here
+        host: true, // Optional: allows external access
         fs: {
             allow: ['..']
         }
