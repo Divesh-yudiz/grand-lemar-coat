@@ -128,14 +128,14 @@ function initThree() {
   scene.background = new THREE.Color(0xf0f0f0);
 
   camera = new THREE.OrthographicCamera(
-    window.innerWidth / -630,
-    window.innerWidth / 630,
-    window.innerHeight / 630,
-    window.innerHeight / -630,
+    window.innerWidth / -700,
+    window.innerWidth / 700,
+    window.innerHeight / 700,
+    window.innerHeight / -700,
     1,
     1000
   );
-  camera.position.set(0, 0, 10);
+  camera.position.set(0, 0, 12);
   camera.updateProjectionMatrix();
   camera.lookAt(0, 0, 0);
 
@@ -182,13 +182,13 @@ function initThree() {
 
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);
-  // controls.enableDamping = true;
-  // controls.enablePan = false;
-  // controls.minPolarAngle = Math.PI / 2;
-  // controls.maxPolarAngle = Math.PI / 2;
-  // controls.minZoom = 0.75;
-  // controls.maxZoom = 1.5;
-  // controls.enableZoom = false;
+  controls.enableDamping = true;
+  controls.enablePan = false;
+  controls.minPolarAngle = Math.PI / 2;
+  controls.maxPolarAngle = Math.PI / 2;
+  controls.minZoom = 0.75;
+  controls.maxZoom = 1.5;
+  controls.enableZoom = false;
 
 
   suitGroup = new THREE.Group();
@@ -328,6 +328,11 @@ function applyDefaultConfig() {
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
   updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
   updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
+
+  // Force refresh buttonhole lapel textures after initial setup
+  setTimeout(() => {
+    forceRefreshButtonholeLapelTextures();
+  }, 500);
 }
 
 
@@ -1096,6 +1101,13 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
 
       if (colorTextureLoaded && normalTextureLoaded) {
         applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materialOptions, excludeGroups);
+        // Also apply the same fabric texture to buttonhole lapel elements
+        applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOptions);
+
+        // Force a second application after a short delay to ensure consistency
+        setTimeout(() => {
+          applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOptions);
+        }, 100);
       }
     },
     undefined,
@@ -1113,6 +1125,13 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
 
       if (colorTextureLoaded && normalTextureLoaded) {
         applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materialOptions, excludeGroups);
+        // Also apply the same fabric texture to buttonhole lapel elements
+        applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOptions);
+
+        // Force a second application after a short delay to ensure consistency
+        setTimeout(() => {
+          applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOptions);
+        }, 100);
       }
     },
     undefined,
@@ -1135,7 +1154,10 @@ function updateFabric(fabricKey) {
     repeat: [20, 20],
   });
 
-  applyBlackColorToNotchLapelLeftButton();
+  // Force refresh buttonhole lapel textures after fabric change
+  setTimeout(() => {
+    forceRefreshButtonholeLapelTextures();
+  }, 200);
 
   // Update UI to show selected fabric
   updateFabricSelectionUI(fabricKey);
@@ -1208,8 +1230,8 @@ function updateVentOptions() {
   // Clear current options
   ventSelect.innerHTML = '';
 
-  // If both martingale belt and inverted box pleat are true, only show "none"
-  if (martingaleBeltValue === true && invertedBoxPleatValue === true) {
+  // If EITHER martingale belt OR inverted box pleat is true, only show "none"
+  if (martingaleBeltValue === true || invertedBoxPleatValue === true) {
     const option = document.createElement('option');
     option.value = 'none';
     option.textContent = 'NONE';
@@ -1220,7 +1242,7 @@ function updateVentOptions() {
     CONFIG.defaults.vent = 'none';
     updateVent();
   } else {
-    // Show both "none" and "single" options
+    // Show both "none" and "single" options only when neither is true
     const noneOption = document.createElement('option');
     noneOption.value = 'none';
     noneOption.textContent = 'NONE';
@@ -1265,6 +1287,11 @@ function handleConfigChange(event) {
     // Update buttonhole position when lapel style changes
     const currentButtonholePosition = getConfigValue('buttonholeLapelPosition');
     updateButtonholeLapelPosition(currentButtonholePosition);
+
+    // Force refresh buttonhole lapel textures after lapel style change
+    setTimeout(() => {
+      forceRefreshButtonholeLapelTextures();
+    }, 100);
   }
 
   if (configType === 'shoulder') {
@@ -1324,11 +1351,21 @@ function handleConfigChange(event) {
   if (configType === 'buttonhole-lapel') {
     currentButtonholeLapel = value;
     updateButtonholeLapel(value);
+
+    // Force refresh buttonhole lapel textures after buttonhole style change
+    setTimeout(() => {
+      forceRefreshButtonholeLapelTextures();
+    }, 100);
   }
 
   if (configType === 'buttonhole-lapel-position') {
     currentButtonholeLapelPosition = value;
     updateButtonholeLapelPosition(value);
+
+    // Force refresh buttonhole lapel textures after buttonhole position change
+    setTimeout(() => {
+      forceRefreshButtonholeLapelTextures();
+    }, 100);
   }
 }
 
@@ -1406,11 +1443,8 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
       colorTextureLoaded = true;
 
       if (colorTextureLoaded) {
-        // Apply button fabric texture to all button elements except notch_lapel_left_button
-        applyTexturesToGroups(colorTexture, null, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
-
-        // Apply black color specifically to notch_lapel_left_button
-        applyBlackColorToNotchLapelLeftButton();
+        // Apply button fabric texture to all button elements except buttonhole lapel elements
+        applyTexturesToGroups(colorTexture, null, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002', 'lapel']);
       }
     },
     undefined,
@@ -1428,11 +1462,8 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
         normalTextureLoaded = true;
 
         if (colorTextureLoaded && normalTextureLoaded) {
-          // Apply button fabric texture to all button elements except notch_lapel_left_button
-          applyTexturesToGroups(colorTexture, normalTexture, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
-
-          // Apply black color specifically to notch_lapel_left_button
-          applyBlackColorToNotchLapelLeftButton();
+          // Apply button fabric texture to all button elements except buttonhole lapel elements
+          applyTexturesToGroups(colorTexture, normalTexture, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002', 'lapel']);
         }
       },
       undefined,
@@ -1444,43 +1475,142 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
 }
 
 /**
- * Apply black color specifically to the notch_lapel_left_button mesh
+ * Apply the same fabric texture to buttonhole lapel elements
+ * @param {THREE.Texture} colorTexture - The fabric color texture to apply
+ * @param {THREE.Texture} normalTexture - The fabric normal texture to apply
+ * @param {Object} materialOptions - Additional material properties
  */
-function applyBlackColorToNotchLapelLeftButton() {
+function applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOptions = {}) {
   if (!suitGroup) return;
 
-  // Create a black material
-  const blackMaterial = new THREE.MeshStandardMaterial({
-    color: 0x000000, // Black color
-    roughness: 1,
-    metalness: 0.5,
-    polygonOffset: true,
-    polygonOffsetFactor: 1,
-    polygonOffsetUnits: 1,
-    depthWrite: true,
-    depthTest: true
-  });
+  console.log("🔧 Applying textures to buttonhole lapel elements");
 
-  // Function to find and apply black material to notch_lapel_left_button
-  function applyBlackToNotchLapelLeftButton(object) {
-    // if (object.isMesh && object.name === 'notch_lapel_left_button') {
-    //   object.material = blackMaterial;
-    //   object.material.needsUpdate = true;
-    //   console.log('✅ Applied black color to notch_lapel_left_button');
-    // }
+  // Configure texture settings
+  const configureTexture = (texture) => {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.encoding = THREE.sRGBEncoding;
 
-    // Recursively search through children
-    if (object.children) {
-      object.children.forEach(child => {
-        applyBlackToNotchLapelLeftButton(child);
-      });
+    const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.anisotropy = maxAnisotropy;
+
+    texture.generateMipmaps = true;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+
+    const repeatX = materialOptions.repeat?.[0] || 10;
+    const repeatY = materialOptions.repeat?.[1] || 10;
+    texture.repeat.set(repeatX, repeatY);
+  };
+
+  // Configure both textures
+  configureTexture(colorTexture);
+  if (normalTexture) {
+    configureTexture(normalTexture);
+  }
+
+  // Define all buttonhole lapel mesh names that should get the same fabric texture
+  const buttonholeLapelMeshes = [
+    'notch_lapel_left_traditional',
+    'notch_lapel_right_traditional',
+    'notch_left_Handmade_milanese',
+    'notch_right_Handmade_milanese',
+    'peak_left_traditional_button',
+    'peak_right_traditional_button',
+    'peak_left_Handmade_milanese',
+    'peak_right_Handmade_milanese',
+    'notchpeak_lapel_left_traditional',
+    'notchpeak_lapel_right_traditional',
+    'notchpeak_left_Handmade_milanese',
+    'notchpeak_right_Handmade_milanese'
+  ];
+
+  let appliedCount = 0;
+
+  // Function to apply textures to buttonhole lapel meshes
+  function applyTexturesToButtonholeMesh(mesh) {
+    if (mesh.isMesh && buttonholeLapelMeshes.includes(mesh.name)) {
+      console.log("✅ Applying fabric texture to buttonhole lapel:", mesh.name);
+
+      // Force material update and ensure proper material properties
+      if (!mesh.material) {
+        mesh.material = new THREE.MeshStandardMaterial();
+      }
+
+      // Apply the fabric texture
+      mesh.material.map = colorTexture;
+      if (normalTexture) {
+        mesh.material.normalMap = normalTexture;
+        mesh.material.normalMap.needsUpdate = true;
+      }
+
+      // Set material properties
+      mesh.material.polygonOffset = true;
+      mesh.material.polygonOffsetFactor = 1;
+      mesh.material.polygonOffsetUnits = 1;
+      mesh.material.depthWrite = true;
+      mesh.material.depthTest = true;
+      mesh.material.roughness = 1;
+      mesh.material.metalness = 0.5;
+      mesh.material.needsUpdate = true;
+
+      appliedCount++;
     }
   }
 
-  // Search through the entire suit group
+  // Traverse and apply textures to buttonhole lapel elements
   suitGroup.traverse((child) => {
-    applyBlackToNotchLapelLeftButton(child);
+    applyTexturesToButtonholeMesh(child);
   });
+
+  console.log(`🎯 Applied fabric texture to ${appliedCount} buttonhole lapel elements`);
+}
+
+/**
+ * Force refresh buttonhole lapel textures to ensure they always match the main fabric
+ */
+function forceRefreshButtonholeLapelTextures() {
+  if (!suitGroup) return;
+
+  console.log("🔄 Force refreshing buttonhole lapel textures");
+
+  // Get the current fabric configuration
+  const currentFabricKey = CONFIG.defaults.fabric;
+  const fabricConfig = CONFIG.fabrics[currentFabricKey];
+
+  if (!fabricConfig) {
+    console.warn("❌ No fabric config found for force refresh");
+    return;
+  }
+
+  // Create a new texture loader and force apply the current fabric
+  const textureLoader = new THREE.TextureLoader();
+
+  textureLoader.load(
+    fabricConfig.color,
+    (colorTexture) => {
+      // Configure the texture
+      colorTexture.wrapS = THREE.RepeatWrapping;
+      colorTexture.wrapT = THREE.RepeatWrapping;
+      colorTexture.encoding = THREE.sRGBEncoding;
+
+      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+      colorTexture.anisotropy = maxAnisotropy;
+      colorTexture.generateMipmaps = true;
+      colorTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      colorTexture.magFilter = THREE.LinearFilter;
+      colorTexture.repeat.set(20, 20);
+
+      // Apply to buttonhole lapel elements
+      applyTexturesToButtonholeLapel(colorTexture, null, { repeat: [20, 20] });
+
+      console.log("✅ Force refresh completed for buttonhole lapel textures");
+    },
+    undefined,
+    (error) => {
+      console.error('❌ Error in force refresh:', error);
+    }
+  );
 }
 
 /**
@@ -1662,6 +1792,13 @@ document.addEventListener('DOMContentLoaded', () => {
   selectedMainFabric = CONFIG.defaults.fabric;
   updateFabricSelectionUI(selectedMainFabric);
   updateFabric(selectedMainFabric);
+
+  // Set up periodic check to ensure buttonhole lapel textures are correct
+  setInterval(() => {
+    if (currentScreen === 'config') {
+      forceRefreshButtonholeLapelTextures();
+    }
+  }, 2000); // Check every 2 seconds when in config mode
 });
 
 // ----- Handle Resize -----
