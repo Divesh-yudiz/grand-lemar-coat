@@ -327,6 +327,7 @@ function applyDefaultConfig() {
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
   updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
   updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
+  applyBlackColorToNotchLapelLeftButton();
 }
 
 
