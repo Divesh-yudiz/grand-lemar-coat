@@ -1371,7 +1371,7 @@ function updateLapelOptions(buttoningType) {
 }
 
 /**
- * Load and apply button fabric textures
+ * Load and apply button fabric textures with special handling for notch_lapel_left_button
  * @param {string} colorTextureUrl - URL or path to the button fabric color texture
  * @param {string} normalTextureUrl - URL or path to the button fabric normal texture
  * @param {Object} materialOptions - Additional material properties
@@ -1391,7 +1391,11 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
       colorTextureLoaded = true;
 
       if (colorTextureLoaded) {
-        applyTexturesToGroups(colorTexture, null, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_left_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
+        // Apply button fabric texture to all button elements except notch_lapel_left_button
+        applyTexturesToGroups(colorTexture, null, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
+
+        // Apply black color specifically to notch_lapel_left_button
+        applyBlackColorToNotchLapelLeftButton();
       }
     },
     undefined,
@@ -1409,7 +1413,11 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
         normalTextureLoaded = true;
 
         if (colorTextureLoaded && normalTextureLoaded) {
-          applyTexturesToGroups(colorTexture, normalTexture, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_left_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
+          // Apply button fabric texture to all button elements except notch_lapel_left_button
+          applyTexturesToGroups(colorTexture, normalTexture, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'notch_lapel_right_button', 'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002']);
+
+          // Apply black color specifically to notch_lapel_left_button
+          applyBlackColorToNotchLapelLeftButton();
         }
       },
       undefined,
@@ -1418,6 +1426,46 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
       }
     );
   }
+}
+
+/**
+ * Apply black color specifically to the notch_lapel_left_button mesh
+ */
+function applyBlackColorToNotchLapelLeftButton() {
+  if (!suitGroup) return;
+
+  // Create a black material
+  const blackMaterial = new THREE.MeshStandardMaterial({
+    color: 0x000000, // Black color
+    roughness: 1,
+    metalness: 0.5,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
+    depthWrite: true,
+    depthTest: true
+  });
+
+  // Function to find and apply black material to notch_lapel_left_button
+  function applyBlackToNotchLapelLeftButton(object) {
+    // if (object.isMesh && object.name === 'notch_lapel_left_button') {
+    //   object.material = blackMaterial;
+    //   object.material.needsUpdate = true;
+    //   console.log('✅ Applied black color to notch_lapel_left_button');
+    // }
+
+    // Recursively search through children
+    if (object.children) {
+      object.children.forEach(child => {
+        applyBlackToNotchLapelLeftButton(child);
+      });
+    }
+  }
+
+  // Search through the entire suit group
+  suitGroup.traverse((child) => {
+    applyBlackToNotchLapelLeftButton(child);
+  });
 }
 
 /**
