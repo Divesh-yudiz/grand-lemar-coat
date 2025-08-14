@@ -311,6 +311,7 @@ function updateVariant(groupName, visibleChildName, toggle = true, visibility = 
 }
 
 function applyDefaultConfig() {
+  scaleButtonsOnXAxis(1.09);
   updateLapelStyle(CONFIG.defaults.lapelStyle);
   updateButtoning(CONFIG.defaults.buttoning);
   updateShoulders(CONFIG.defaults.shoulder);
@@ -327,7 +328,6 @@ function applyDefaultConfig() {
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
   updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
   updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
-  applyBlackColorToNotchLapelLeftButton();
 }
 
 
@@ -355,6 +355,8 @@ function updateButtoning(styleKey, toggle = true, visibility = true) {
   };
 
   currentButtoning = styleKey;
+
+
 
   updateVariant('Buttons', buttoningMap[styleKey], toggle, visibility);
 }
@@ -729,8 +731,8 @@ function updateButtonholeLapelPosition(styleKey) {
   const buttonNames = {
     notch: {
       traditional: {
-        left: 'notch_lapel_left_button',
-        right: 'notch_lapel_right_button'
+        left: 'notch_lapel_left_traditional',
+        right: 'notch_lapel_right_traditional'
       },
       'handmade-milanese': {
         left: 'notch_left_Handmade_milanese',
@@ -739,8 +741,8 @@ function updateButtonholeLapelPosition(styleKey) {
     },
     peak: {
       traditional: {
-        left: 'peak_lapel_left_button',
-        right: 'peak_right_button'
+        left: 'peak_left_traditional_button',
+        right: 'peak_right_traditional_button'
       },
       'handmade-milanese': {
         left: 'peak_left_Handmade_milanese',
@@ -749,8 +751,8 @@ function updateButtonholeLapelPosition(styleKey) {
     },
     notchpeak: {
       traditional: {
-        left: 'notchpeak_lapel_left_button',
-        right: 'notchpeak_lapel_right_button'
+        left: 'notchpeak_lapel_left_traditional',
+        right: 'notchpeak_lapel_right_traditional'
       },
       'handmade-milanese': {
         left: 'notchpeak_left_Handmade_milanese',
@@ -766,15 +768,25 @@ function updateButtonholeLapelPosition(styleKey) {
     return;
   }
 
-  // Hide all buttonhole variants first (both traditional and handmade-milanese)
+  // FIRST: Hide ALL buttonhole variants completely (both traditional and handmade-milanese)
+  // This ensures no other variants are visible
   currentLapelStyleGroup.children.forEach(child => {
-    if (child.name.includes('button') || child.name.includes('Handmade_milanese')) {
+    // Hide any child that contains buttonhole-related names
+    if (child.name.includes('traditional') ||
+      child.name.includes('Handmade_milanese') ||
+      child.name.includes('button') ||
+      child.name.includes('lapel_left') ||
+      child.name.includes('lapel_right') ||
+      child.name.includes('_left_') ||
+      child.name.includes('_right_')) {
       child.visible = false;
-      child.traverse(subChild => subChild.visible = false);
+      child.traverse(subChild => {
+        subChild.visible = false;
+      });
     }
   });
 
-  // Handle different position selections
+  // SECOND: Show ONLY the selected buttonhole variants based on position
   switch (styleKey) {
     case 'left':
       // Show only left button of the current buttonhole style
@@ -806,7 +818,7 @@ function updateButtonholeLapelPosition(styleKey) {
       break;
 
     case 'none':
-      // Hide both buttons (already done above)
+      // Keep all buttonhole variants hidden
       break;
 
     default:
@@ -853,15 +865,15 @@ function updateButtonholeLapel(styleKey) {
   // Define buttonhole style variants for each lapel type based on actual mesh names
   const buttonholeStyleMap = {
     notch: {
-      traditional: ['notch_lapel_left_button', 'notch_lapel_right_button'],
+      traditional: ['notch_lapel_left_traditional', 'notch_lapel_right_traditional'],
       'handmade-milanese': ['notch_left_Handmade_milanese', 'notch_right_Handmade_milanese']
     },
     peak: {
-      traditional: ['peak_left_button', 'peak_right_button'],
+      traditional: ['peak_left_traditional_button', 'peak_right_traditional_button'],
       'handmade-milanese': ['peak_left_Handmade_milanese', 'peak_right_Handmade_milanese']
     },
     notchpeak: {
-      traditional: ['notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'],
+      traditional: ['notchpeak_lapel_left_traditional', 'notchpeak_lapel_right_traditional'],
       'handmade-milanese': ['notchpeak_left_Handmade_milanese', 'notchpeak_right_Handmade_milanese']
     }
   };
@@ -873,15 +885,15 @@ function updateButtonholeLapel(styleKey) {
     return;
   }
 
-  // Hide all buttonhole style variants first
+  // Hide ALL buttonhole style variants first (both traditional and handmade-milanese)
   currentLapelStyleGroup.children.forEach(child => {
-    if (child.name.includes('button') || child.name.includes('Handmade_milanese')) {
+    if (child.name.includes('traditional') || child.name.includes('Handmade_milanese')) {
       child.visible = false;
       child.traverse(subChild => subChild.visible = false);
     }
   });
 
-  // Show the selected buttonhole style variant
+  // Show only the selected buttonhole style variant
   const targetButtonholeVariants = currentButtonholeStyles[styleKey];
   if (targetButtonholeVariants) {
     targetButtonholeVariants.forEach(variantName => {
@@ -1122,6 +1134,8 @@ function updateFabric(fabricKey) {
   loadAndApplyFabric(fabricConfig.color, fabricConfig.normal, {
     repeat: [20, 20],
   });
+
+  applyBlackColorToNotchLapelLeftButton();
 
   // Update UI to show selected fabric
   updateFabricSelectionUI(fabricKey);
@@ -1656,3 +1670,73 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth - 350, window.innerHeight);
 });
+
+function scaleButtonsOnXAxis(scaleFactor = 1.2) {
+  if (!suitGroup) {
+    console.warn('Suit group not found');
+    return;
+  }
+
+  // Define all button group names that should be scaled
+  const buttonGroups = [
+    'Buttons', '2_Buttons', '6_buttons', 'belt_button',
+    'pleat_buttons', 'notch_lapel_left_button', 'notch_lapel_right_button',
+    'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button',
+    'notchpeak_lapel_right_button', 'notch_left_Handmade_milanese', 'notch_right_Handmade_milanese',
+    'peak_left_Handmade_milanese', 'peak_right_Handmade_milanese', 'notchpeak_left_Handmade_milanese',
+    'notchpeak_right_Handmade_milanese'
+  ];
+
+  // Function to scale a mesh or group on X axis
+  function scaleMeshOnX(mesh, scaleX) {
+    if (mesh.isMesh) {
+      // Store original scale if not already stored
+      if (!mesh.userData.originalScale) {
+        mesh.userData.originalScale = {
+          x: mesh.scale.x,
+          y: mesh.scale.y,
+          z: mesh.scale.z
+        };
+      }
+
+      // Apply scaling only on X axis
+      mesh.scale.x = mesh.userData.originalScale.x * scaleX;
+      mesh.scale.needsUpdate = true;
+    }
+  }
+
+  // Traverse through the suit group to find and scale buttons
+  suitGroup.traverse((child) => {
+    // Check if the current child is a button group
+    if (buttonGroups.includes(child.name)) {
+      // Scale the button group itself
+      scaleMeshOnX(child, scaleFactor);
+
+      // Also scale all children within the button group
+      child.traverse((subChild) => {
+        scaleMeshOnX(subChild, scaleFactor);
+      });
+    }
+  });
+
+  console.log(`✅ Buttons scaled on X-axis by factor: ${scaleFactor}`);
+}
+
+// Function to reset button scaling to original size
+function resetButtonScaling() {
+  if (!suitGroup) {
+    console.warn('Suit group not found');
+    return;
+  }
+
+  suitGroup.traverse((child) => {
+    if (child.userData.originalScale) {
+      child.scale.x = child.userData.originalScale.x;
+      child.scale.y = child.userData.originalScale.y;
+      child.scale.z = child.userData.originalScale.z;
+      child.scale.needsUpdate = true;
+    }
+  });
+
+  console.log('✅ Button scaling reset to original size');
+}
