@@ -24,7 +24,8 @@ let lightOffset = {
   z: 10
 };
 
-let currentButtoning, currentLapelStyle, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings, currentVent = 'none', currentButtonholeLapelPosition;
+// Add buttonhole lapel style to global variables
+let currentButtoning, currentLapelStyle, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings, currentVent = 'none', currentButtonholeLapelPosition, currentButtonholeLapel;
 
 // ----- Configuration Data -----
 const CONFIG = {
@@ -40,6 +41,7 @@ const CONFIG = {
     linings: true,
     vent: "Structured",
     buttonholeLapelPosition: "left",
+    buttonholeLapel: "traditional", // Add this line
     fabric: "fabric1",
     buttonFabric: "button-fabric1", // Add button fabric default
     liningFabric: "lining-fabric1"  // Add lining fabric default
@@ -107,8 +109,18 @@ const CONFIG = {
       normal: uv2,
       name: 'Light Beige'
     }
+  },
+
+  // Add buttonhole lapel assets mapping
+  buttonholeLapel: {
+    traditional: 'traditional',
+    'handmade-milanese': 'handmade_milanese'
   }
 };
+
+// Add new global variables for the flow control
+let selectedMainFabric = null;
+let currentScreen = 'fabric-selection'; // 'fabric-selection' or 'config'
 
 // ----- Three.js Initialization -----
 function initThree() {
@@ -177,7 +189,8 @@ function initThree() {
   // controls.minZoom = 0.75;
   // controls.maxZoom = 1.5;
   // controls.enableZoom = false;
-  // Suit group holder
+
+
   suitGroup = new THREE.Group();
   scene.add(suitGroup);
 
@@ -310,6 +323,7 @@ function applyDefaultConfig() {
   updateLinings(); // Remove parameter, let it determine dynamically
   updateVent();
   updateButtonholeLapelPosition(CONFIG.defaults.buttonholeLapelPosition);
+  updateButtonholeLapel(CONFIG.defaults.buttonholeLapel); // Add this line
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
   updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
   updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
@@ -680,6 +694,7 @@ function updateButtonholeLapelPosition(styleKey) {
 
   // Get the current lapel style to determine which buttons to show/hide
   const currentLapel = currentLapelStyle || CONFIG.defaults.lapelStyle;
+  const currentButtonholeStyle = currentButtonholeLapel || CONFIG.defaults.buttonholeLapel;
 
   // Map lapel styles to their corresponding group names in the hierarchy
   const lapelGroupMap = {
@@ -709,81 +724,179 @@ function updateButtonholeLapelPosition(styleKey) {
     return;
   }
 
-  // Define button names based on the specific hierarchy structure for each lapel type
+  // Define button names based on the specific hierarchy structure for each lapel type and buttonhole style
   const buttonNames = {
     notch: {
-      left: 'notch_lapel_left_button',
-      right: 'notch_lapel_right_button'
+      traditional: {
+        left: 'notch_lapel_left_button',
+        right: 'notch_lapel_right_button'
+      },
+      'handmade-milanese': {
+        left: 'notch_left_Handmade_milanese',
+        right: 'notch_right_Handmade_milanese'
+      }
     },
     peak: {
-      left: 'peak_left_button',
-      right: 'peak_right_button'
+      traditional: {
+        left: 'peak_lapel_left_button',
+        right: 'peak_right_button'
+      },
+      'handmade-milanese': {
+        left: 'peak_left_Handmade_milanese',
+        right: 'peak_right_Handmade_milanese'
+      }
     },
     notchpeak: {
-      left: 'notchpeak_lapel_left_button',
-      right: 'notchpeak_lapel_right_button'
+      traditional: {
+        left: 'notchpeak_lapel_left_button',
+        right: 'notchpeak_lapel_right_button'
+      },
+      'handmade-milanese': {
+        left: 'notchpeak_left_Handmade_milanese',
+        right: 'notchpeak_right_Handmade_milanese'
+      }
     }
   };
 
-  // Get the button names for the current lapel style
-  const currentButtonNames = buttonNames[currentLapel];
+  // Get the button names for the current lapel style and buttonhole style
+  const currentButtonNames = buttonNames[currentLapel]?.[currentButtonholeStyle];
   if (!currentButtonNames) {
-    console.warn(`No button names defined for lapel style: ${currentLapel}`);
+    console.warn(`No button names defined for lapel style: ${currentLapel}, buttonhole style: ${currentButtonholeStyle}`);
     return;
   }
+
+  // Hide all buttonhole variants first (both traditional and handmade-milanese)
+  currentLapelStyleGroup.children.forEach(child => {
+    if (child.name.includes('button') || child.name.includes('Handmade_milanese')) {
+      child.visible = false;
+      child.traverse(subChild => subChild.visible = false);
+    }
+  });
 
   // Handle different position selections
   switch (styleKey) {
     case 'left':
-      // Show only left button, hide right button
-      currentLapelStyleGroup.children.forEach(child => {
-        if (child.name === currentButtonNames.left) {
-          child.visible = true;
-          child.traverse(subChild => subChild.visible = true);
-        } else if (child.name === currentButtonNames.right) {
-          child.visible = false;
-          child.traverse(subChild => subChild.visible = false);
-        }
-      });
+      // Show only left button of the current buttonhole style
+      const leftButton = currentLapelStyleGroup.children.find(child => child.name === currentButtonNames.left);
+      if (leftButton) {
+        leftButton.visible = true;
+        leftButton.traverse(subChild => subChild.visible = true);
+      }
       break;
 
     case 'right':
-      // Show only right button, hide left button
-      currentLapelStyleGroup.children.forEach(child => {
-        if (child.name === currentButtonNames.right) {
-          child.visible = true;
-          child.traverse(subChild => subChild.visible = true);
-        } else if (child.name === currentButtonNames.left) {
-          child.visible = false;
-          child.traverse(subChild => subChild.visible = false);
-        }
-      });
+      // Show only right button of the current buttonhole style
+      const rightButton = currentLapelStyleGroup.children.find(child => child.name === currentButtonNames.right);
+      if (rightButton) {
+        rightButton.visible = true;
+        rightButton.traverse(subChild => subChild.visible = true);
+      }
       break;
 
     case 'both':
-      // Show both buttons
-      currentLapelStyleGroup.children.forEach(child => {
-        if (child.name === currentButtonNames.left || child.name === currentButtonNames.right) {
-          child.visible = true;
-          child.traverse(subChild => subChild.visible = true);
+      // Show both buttons of the current buttonhole style
+      [currentButtonNames.left, currentButtonNames.right].forEach(buttonName => {
+        const button = currentLapelStyleGroup.children.find(child => child.name === buttonName);
+        if (button) {
+          button.visible = true;
+          button.traverse(subChild => subChild.visible = true);
         }
       });
       break;
 
     case 'none':
-      // Hide both buttons
-      currentLapelStyleGroup.children.forEach(child => {
-        if (child.name === currentButtonNames.left || child.name === currentButtonNames.right) {
-          child.visible = false;
-          child.traverse(subChild => subChild.visible = false);
-        }
-      });
+      // Hide both buttons (already done above)
       break;
 
     default:
       console.warn(`Unknown buttonhole position: ${styleKey}`);
       break;
   }
+}
+
+// Update the buttonhole lapel function to match actual mesh names
+function updateButtonholeLapel(styleKey) {
+  currentButtonholeLapel = styleKey;
+
+  // Get the current lapel style to determine which buttonhole group to update
+  const currentLapel = currentLapelStyle || CONFIG.defaults.lapelStyle;
+
+  // Map lapel styles to their corresponding group names in the hierarchy
+  const lapelGroupMap = {
+    notch: 'noatch',
+    peak: 'Peak',
+    notchpeak: 'notchpeak'
+  };
+
+  const currentLapelGroup = lapelGroupMap[currentLapel];
+
+  if (!currentLapelGroup) {
+    console.warn(`No lapel group found for style: ${currentLapel}`);
+    return;
+  }
+
+  // Get the lapel group from loaded meshes
+  const lapelGroup = loadedMeshes['lapel'];
+  if (!lapelGroup) {
+    console.warn('Lapel group not found');
+    return;
+  }
+
+  // Find the current lapel style group (notch, Peak, or notchpeak)
+  const currentLapelStyleGroup = lapelGroup.children.find(child => child.name === currentLapelGroup);
+  if (!currentLapelStyleGroup) {
+    console.warn(`Lapel style group '${currentLapelGroup}' not found`);
+    return;
+  }
+
+  // Define buttonhole style variants for each lapel type based on actual mesh names
+  const buttonholeStyleMap = {
+    notch: {
+      traditional: ['notch_lapel_left_button', 'notch_lapel_right_button'],
+      'handmade-milanese': ['notch_left_Handmade_milanese', 'notch_right_Handmade_milanese']
+    },
+    peak: {
+      traditional: ['peak_left_button', 'peak_right_button'],
+      'handmade-milanese': ['peak_left_Handmade_milanese', 'peak_right_Handmade_milanese']
+    },
+    notchpeak: {
+      traditional: ['notchpeak_lapel_left_button', 'notchpeak_lapel_right_button'],
+      'handmade-milanese': ['notchpeak_left_Handmade_milanese', 'notchpeak_right_Handmade_milanese']
+    }
+  };
+
+  // Get the buttonhole style variants for the current lapel style
+  const currentButtonholeStyles = buttonholeStyleMap[currentLapel];
+  if (!currentButtonholeStyles) {
+    console.warn(`No buttonhole styles defined for lapel style: ${currentLapel}`);
+    return;
+  }
+
+  // Hide all buttonhole style variants first
+  currentLapelStyleGroup.children.forEach(child => {
+    if (child.name.includes('button') || child.name.includes('Handmade_milanese')) {
+      child.visible = false;
+      child.traverse(subChild => subChild.visible = false);
+    }
+  });
+
+  // Show the selected buttonhole style variant
+  const targetButtonholeVariants = currentButtonholeStyles[styleKey];
+  if (targetButtonholeVariants) {
+    targetButtonholeVariants.forEach(variantName => {
+      const buttonholeMesh = currentLapelStyleGroup.children.find(child => child.name === variantName);
+      if (buttonholeMesh) {
+        buttonholeMesh.visible = true;
+        buttonholeMesh.traverse(subChild => subChild.visible = true);
+      } else {
+        console.warn(`Buttonhole variant '${variantName}' not found`);
+      }
+    });
+  }
+
+  // After updating buttonhole style, also update the position to ensure proper visibility
+  const currentButtonholePosition = currentButtonholeLapelPosition || CONFIG.defaults.buttonholeLapelPosition;
+  updateButtonholeLapelPosition(currentButtonholePosition);
 }
 
 ///End of update functions
@@ -807,7 +920,8 @@ function getCurrentConfig() {
     'side-pocket-select': 'sidePocket',
     'sleeve-design-select': 'sleeveDesign',
     'lining-select': 'linings',
-    'buttonhole-lapel-position-select': 'buttonholeLapelPosition'
+    'buttonhole-lapel-position-select': 'buttonholeLapelPosition',
+    'buttonhole-lapel-select': 'buttonholeLapel' // Add this line
   };
 
   // Get values from all select elements
@@ -845,6 +959,7 @@ function getCurrentConfig() {
   config.currentLinings = currentLinings;
   config.currentVent = currentVent;
   config.currentButtonholeLapelPosition = currentButtonholeLapelPosition;
+  config.currentButtonholeLapel = currentButtonholeLapel; // Add this line
 
   return config;
 }
@@ -1009,17 +1124,6 @@ function updateFabric(fabricKey) {
 
   // Update UI to show selected fabric
   updateFabricSelectionUI(fabricKey);
-}
-
-// Add function to update fabric selection UI
-function updateFabricSelectionUI(selectedFabric) {
-  const fabricOptions = document.querySelectorAll('.fabric-option');
-  fabricOptions.forEach(option => {
-    option.classList.remove('selected');
-    if (option.dataset.fabric === selectedFabric) {
-      option.classList.add('selected');
-    }
-  });
 }
 
 // Add button fabric update function
@@ -1202,6 +1306,11 @@ function handleConfigChange(event) {
     }
   }
 
+  if (configType === 'buttonhole-lapel') {
+    currentButtonholeLapel = value;
+    updateButtonholeLapel(value);
+  }
+
   if (configType === 'buttonhole-lapel-position') {
     currentButtonholeLapelPosition = value;
     updateButtonholeLapelPosition(value);
@@ -1358,25 +1467,97 @@ function loadAndApplyLiningFabric(colorTextureUrl, normalTextureUrl, materialOpt
   );
 }
 
+// ----- Initialize Fabric Selection UI -----
+function initFabricSelectionUI() {
+  // Add fabric card selection event listeners
+  const fabricCards = document.querySelectorAll('.fabric-card');
+  fabricCards.forEach(card => {
+    card.addEventListener('click', () => {
+      // Remove selection from all cards
+      fabricCards.forEach(c => c.classList.remove('selected'));
+      // Add selection to clicked card
+      card.classList.add('selected');
+      selectedMainFabric = card.dataset.fabric;
+
+      // Update the 3D model with selected fabric
+      updateFabric(selectedMainFabric);
+    });
+  });
+
+  // Add next button event listener
+  const fabricNextBtn = document.getElementById('fabric-next-btn');
+  if (fabricNextBtn) {
+    fabricNextBtn.addEventListener('click', () => {
+      if (selectedMainFabric) {
+        showConfigurationUI();
+      } else {
+        alert('Please select a fabric first');
+      }
+    });
+  }
+
+  // Add back button event listener in config UI
+  const backToFabricBtn = document.getElementById('back-to-fabric-btn');
+  if (backToFabricBtn) {
+    backToFabricBtn.addEventListener('click', () => {
+      showFabricSelectionUI();
+    });
+  }
+}
+
+// ----- Show/Hide UI Functions -----
+function showConfigurationUI() {
+  currentScreen = 'config';
+  document.getElementById('fabric-selection-screen').style.display = 'none';
+  document.getElementById('config-sidebar').style.display = 'flex';
+
+  // Initialize the configuration UI if not already done
+  if (!window.configUIInitialized) {
+    initConfigUI();
+    window.configUIInitialized = true;
+  }
+}
+
+function showFabricSelectionUI() {
+  currentScreen = 'fabric-selection';
+  document.getElementById('config-sidebar').style.display = 'none';
+  document.getElementById('fabric-selection-screen').style.display = 'flex';
+}
+
+// ----- Update Fabric Selection UI -----
+function updateFabricSelectionUI(selectedFabric) {
+  // Update fabric cards in the fabric selection screen
+  const fabricCards = document.querySelectorAll('.fabric-card');
+  fabricCards.forEach(card => {
+    card.classList.remove('selected');
+    if (card.dataset.fabric === selectedFabric) {
+      card.classList.add('selected');
+    }
+  });
+
+  // Also update fabric options in the config UI if they exist
+  const fabricOptions = document.querySelectorAll('.fabric-option');
+  fabricOptions.forEach(option => {
+    option.classList.remove('selected');
+    if (option.dataset.fabric === selectedFabric) {
+      option.classList.add('selected');
+    }
+  });
+}
+
 // ----- Initialize DOM Selectors & Events -----
 function initConfigUI() {
   const selects = [
     'buttoning', 'lapel-style', 'shoulder', 'martingale-belt',
-    'inverted-box-pleat', 'vent', 'side-pocket', 'chest-pocket', 'sleeve-design', 'lining', 'buttonhole-lapel-position'
+    'inverted-box-pleat', 'vent', 'side-pocket', 'chest-pocket', 'sleeve-design', 'lining', 'buttonhole-lapel-position', 'buttonhole-lapel'
   ];
 
   selects.forEach(id => {
     const domId = `${id}-select`;
-    document.getElementById(domId).addEventListener('change', handleConfigChange);
-  });
-
-  // Add main fabric selection event listeners
-  const fabricOptions = document.querySelectorAll('[data-fabric^="fabric"]');
-  fabricOptions.forEach(option => {
-    option.addEventListener('click', () => {
-      const fabricKey = option.dataset.fabric;
-      handleFabricChange(fabricKey);
-    });
+    const element = document.getElementById(domId);
+    if (element) {
+      element.addEventListener('change', handleConfigChange);
+    }
   });
 
   // Add button fabric selection event listeners
@@ -1403,8 +1584,7 @@ function initConfigUI() {
   // Initialize vent options based on current martingale belt and inverted box pleat settings
   updateVentOptions();
 
-  // Initialize fabric selection UIs
-  updateFabricSelectionUI(CONFIG.defaults.fabric);
+  // Initialize button and lining fabric selection UIs
   updateButtonFabricSelectionUI(CONFIG.defaults.buttonFabric);
   updateLiningFabricSelectionUI(CONFIG.defaults.liningFabric);
 }
@@ -1412,8 +1592,13 @@ function initConfigUI() {
 // ----- Init Everything on Load -----
 document.addEventListener('DOMContentLoaded', () => {
   initThree();
-  initConfigUI();
-  loadJacketModel(poloCoaModel); // ✅ replace with your model path
+  initFabricSelectionUI(); // Initialize fabric selection UI first
+  loadJacketModel(poloCoaModel);
+
+  // Set default fabric selection
+  selectedMainFabric = CONFIG.defaults.fabric;
+  updateFabricSelectionUI(selectedMainFabric);
+  updateFabric(selectedMainFabric);
 });
 
 // ----- Handle Resize -----

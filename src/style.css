@@ -14,6 +14,204 @@ body {
     overflow: hidden;
 }
 
+/* Fabric Selection Screen Styles */
+.fabric-selection-screen {
+    width: 350px;
+    background: #0c1a2b;
+    color: white;
+    height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.fabric-selection-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0 30px;
+}
+
+.fabric-selection-title {
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+    padding: 40px 0 20px 0;
+    font-weight: 600;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.fabric-selection-divider {
+    height: 1px;
+    background: #1f2d3f;
+    margin-bottom: 30px;
+}
+
+.fabric-selection-controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 30px;
+    flex-shrink: 0;
+}
+
+.search-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    color: #8ba0b8;
+    font-size: 14px;
+}
+
+.fabric-search {
+    width: 100%;
+    padding: 12px 12px 12px 36px;
+    background: #142d4c;
+    border: 1px solid #1f2d3f;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+}
+
+.fabric-search::placeholder {
+    color: #8ba0b8;
+}
+
+.filter-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #142d4c;
+    border: 1px solid #1f2d3f;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+}
+
+.filter-icon {
+    font-size: 16px;
+}
+
+.fabric-grid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    padding-bottom: 20px;
+}
+
+.fabric-card {
+    background: #142d4c;
+    border: 1px solid #1f2d3f;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fabric-card:hover {
+    border-color: #8ba0b8;
+    background: #1a3658;
+}
+
+.fabric-card.selected {
+    border-color: #ffffff;
+    background: #1a3658;
+}
+
+.fabric-swatch {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    background: #000000;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fabric-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.fabric-info-icon {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 20px;
+    height: 20px;
+    background: #000000;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.fabric-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fabric-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.fabric-card-price {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.fabric-selection-footer {
+    border-top: 1px solid #1f2d3f;
+    padding: 20px 0 30px 0;
+    flex-shrink: 0;
+}
+
+.delivery-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.delivery-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #8ba0b8;
+}
+
+.total-price {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* Configuration UI Styles */
 .config-sidebar {
     width: 350px;
     background: #0c1a2b;
