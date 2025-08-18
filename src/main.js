@@ -335,11 +335,6 @@ function applyDefaultConfig() {
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
   updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
   updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
-
-  // Force refresh buttonhole lapel textures after initial setup
-  setTimeout(() => {
-    forceRefreshButtonholeLapelTextures();
-  }, 500);
 }
 
 
@@ -1109,7 +1104,6 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
       if (colorTextureLoaded && normalTextureLoaded) {
         applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materialOptions, excludeGroups);
         // Also apply the same fabric texture to buttonhole lapel elements
-        applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOptions);
 
         // Force a second application after a short delay to ensure consistency
         setTimeout(() => {
@@ -1133,7 +1127,6 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
       if (colorTextureLoaded && normalTextureLoaded) {
         applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materialOptions, excludeGroups);
         // Also apply the same fabric texture to buttonhole lapel elements
-        applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOptions);
 
         // Force a second application after a short delay to ensure consistency
         setTimeout(() => {
@@ -1160,11 +1153,6 @@ function updateFabric(fabricKey) {
   loadAndApplyFabric(fabricConfig.color, fabricConfig.normal, {
     repeat: [20, 20],
   });
-
-  // Force refresh buttonhole lapel textures after fabric change
-  setTimeout(() => {
-    forceRefreshButtonholeLapelTextures();
-  }, 200);
 
   // Update UI to show selected fabric
   updateFabricSelectionUI(fabricKey);
@@ -1294,11 +1282,6 @@ function handleConfigChange(event) {
     // Update buttonhole position when lapel style changes
     const currentButtonholePosition = getConfigValue('buttonholeLapelPosition');
     updateButtonholeLapelPosition(currentButtonholePosition);
-
-    // Force refresh buttonhole lapel textures after lapel style change
-    setTimeout(() => {
-      forceRefreshButtonholeLapelTextures();
-    }, 100);
   }
 
   if (configType === 'shoulder') {
@@ -1359,20 +1342,12 @@ function handleConfigChange(event) {
     currentButtonholeLapel = value;
     updateButtonholeLapel(value);
 
-    // Force refresh buttonhole lapel textures after buttonhole style change
-    setTimeout(() => {
-      forceRefreshButtonholeLapelTextures();
-    }, 100);
   }
 
   if (configType === 'buttonhole-lapel-position') {
     currentButtonholeLapelPosition = value;
     updateButtonholeLapelPosition(value);
 
-    // Force refresh buttonhole lapel textures after buttonhole position change
-    setTimeout(() => {
-      forceRefreshButtonholeLapelTextures();
-    }, 100);
   }
 }
 
@@ -1574,53 +1549,6 @@ function applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOpt
 }
 
 /**
- * Force refresh buttonhole lapel textures to ensure they always match the main fabric
- */
-function forceRefreshButtonholeLapelTextures() {
-  if (!suitGroup) return;
-
-  console.log("🔄 Force refreshing buttonhole lapel textures");
-
-  // Get the current fabric configuration
-  const currentFabricKey = CONFIG.defaults.fabric;
-  const fabricConfig = CONFIG.fabrics[currentFabricKey];
-
-  if (!fabricConfig) {
-    console.warn("❌ No fabric config found for force refresh");
-    return;
-  }
-
-  // Create a new texture loader and force apply the current fabric
-  const textureLoader = new THREE.TextureLoader();
-
-  textureLoader.load(
-    fabricConfig.color,
-    (colorTexture) => {
-      // Configure the texture
-      colorTexture.wrapS = THREE.RepeatWrapping;
-      colorTexture.wrapT = THREE.RepeatWrapping;
-      colorTexture.encoding = THREE.sRGBEncoding;
-
-      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
-      colorTexture.anisotropy = maxAnisotropy;
-      colorTexture.generateMipmaps = true;
-      colorTexture.minFilter = THREE.LinearMipmapLinearFilter;
-      colorTexture.magFilter = THREE.LinearFilter;
-      colorTexture.repeat.set(20, 20);
-
-      // Apply to buttonhole lapel elements
-      applyTexturesToButtonholeLapel(colorTexture, null, { repeat: [20, 20] });
-
-      console.log("✅ Force refresh completed for buttonhole lapel textures");
-    },
-    undefined,
-    (error) => {
-      console.error('❌ Error in force refresh:', error);
-    }
-  );
-}
-
-/**
  * Load and apply lining fabric textures
  * @param {string} colorTextureUrl - URL or path to the lining fabric color texture
  * @param {string} normalTextureUrl - URL or path to the lining fabric normal texture
@@ -1799,13 +1727,6 @@ document.addEventListener('DOMContentLoaded', () => {
   selectedMainFabric = CONFIG.defaults.fabric;
   updateFabricSelectionUI(selectedMainFabric);
   updateFabric(selectedMainFabric);
-
-  // Set up periodic check to ensure buttonhole lapel textures are correct
-  setInterval(() => {
-    if (currentScreen === 'config') {
-      forceRefreshButtonholeLapelTextures();
-    }
-  }, 2000); // Check every 2 seconds when in config mode
 });
 
 // ----- Handle Resize -----
