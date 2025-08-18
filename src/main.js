@@ -127,11 +127,16 @@ function initThree() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf0f0f0);
 
+  // Get the viewer div dimensions
+  const viewerDiv = document.getElementById("viewer");
+  const viewerWidth = viewerDiv.clientWidth;
+  const viewerHeight = viewerDiv.clientHeight;
+
   camera = new THREE.OrthographicCamera(
-    window.innerWidth / -700,
-    window.innerWidth / 700,
-    window.innerHeight / 700,
-    window.innerHeight / -700,
+    viewerWidth / -650,
+    viewerWidth / 650,
+    viewerHeight / 650,
+    viewerHeight / -650,
     1,
     1000
   );
@@ -149,7 +154,9 @@ function initThree() {
   renderer.shadowMap.enabled = true;
   renderer.gammaInput = true;
   renderer.gammaOutput = true;
-  renderer.setSize(window.innerWidth - 350, window.innerHeight);
+
+  renderer.setSize(viewerWidth, viewerHeight);
+
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -1803,9 +1810,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ----- Handle Resize -----
 window.addEventListener('resize', () => {
-  camera.aspect = (window.innerWidth - 350) / window.innerHeight;
+  const viewerDiv = document.getElementById("viewer");
+  const viewerWidth = viewerDiv.clientWidth;
+  const viewerHeight = viewerDiv.clientHeight;
+
+  camera.left = viewerWidth / -650;
+  camera.right = viewerWidth / 650;
+  camera.top = viewerHeight / 650;
+  camera.bottom = viewerHeight / -650;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth - 350, window.innerHeight);
+  renderer.setSize(viewerWidth, viewerHeight);
 });
 
 function scaleButtonsOnXAxis(scaleFactor = 1.2) {
