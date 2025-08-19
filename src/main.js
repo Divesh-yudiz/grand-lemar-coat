@@ -8,8 +8,9 @@ import fabric1 from './assets/fabrics/color2.png';
 import uv1 from './assets/fabrics/uv2.png';
 import fabric2 from './assets/fabrics/color.jpeg';
 import uv2 from './assets/fabrics/uv.png';
-import buttonFabric1 from './assets/fabrics/button1.png';
-import buttonFabric2 from './assets/fabrics/button2.png';
+import buttonFabric3 from './assets/fabrics/C221-2.png';
+import buttonFabric2 from './assets/fabrics/MH1_Black-with-small-stain.png';
+import buttonFabric1 from './assets/fabrics/MH3_Dark-Brown_.png';
 
 // ----- Global Variables -----
 let scene, camera, renderer, controls, suitGroup, composer, renderPass;
@@ -86,14 +87,19 @@ const CONFIG = {
   // Add button fabric assets mapping
   buttonFabrics: {
     'button-fabric1': {
-      color: buttonFabric1,
+      color: buttonFabric1, // MH3_Dark-Brown_.png
       normal: '',
-      name: 'Button Fabric 1'
+      name: 'Dark Brown'
     },
     'button-fabric2': {
-      color: buttonFabric2,
+      color: buttonFabric2, // MH1_Black-with-small-stain.png
       normal: '',
-      name: 'Button Fabric 2'
+      name: 'Black'
+    },
+    'button-fabric3': {
+      color: buttonFabric3, // C221-2.png
+      normal: '',
+      name: 'Navy'
     }
   },
 
@@ -150,7 +156,7 @@ function initThree() {
     preserveDrawingBuffer: true,
     powerPreference: "high-performance",
   });
-  // renderer.toneMapping = THREE.CineonToneMapping;
+
   renderer.shadowMap.enabled = true;
   renderer.gammaInput = true;
   renderer.gammaOutput = true;
@@ -189,13 +195,13 @@ function initThree() {
 
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.enablePan = false;
-  controls.minPolarAngle = Math.PI / 2;
-  controls.maxPolarAngle = Math.PI / 2;
-  controls.minZoom = 0.75;
-  controls.maxZoom = 1.5;
-  controls.enableZoom = false;
+  // controls.enableDamping = true;
+  // controls.enablePan = false;
+  // controls.minPolarAngle = Math.PI / 2;
+  // controls.maxPolarAngle = Math.PI / 2;
+  // controls.minZoom = 0.75;
+  // controls.maxZoom = 1.5;
+  // controls.enableZoom = false;
 
 
   suitGroup = new THREE.Group();
@@ -351,6 +357,7 @@ function updateLapelStyle(styleKey) {
   updateButtonholeLapelPosition(currentButtonholeLapelPosition || CONFIG.defaults.buttonholeLapelPosition);
 }
 
+// Update the button mesh names to be consistent
 function updateButtoning(styleKey, toggle = true, visibility = true) {
   const buttoningMap = {
     single_breasted_2: '2_Buttons',
@@ -362,9 +369,6 @@ function updateButtoning(styleKey, toggle = true, visibility = true) {
   };
 
   currentButtoning = styleKey;
-
-
-
   updateVariant('Buttons', buttoningMap[styleKey], toggle, visibility);
 }
 
@@ -440,6 +444,7 @@ function updateShoulders(styleKey) {
   });
 }
 
+// Fix the martingale belt function to use correct mesh names
 function martingaleBelt(styleKey, visibility = true) {
   currentMartingaleBelt = styleKey;
   const ButtonsGroup = loadedMeshes['Buttons'];
@@ -457,18 +462,21 @@ function martingaleBelt(styleKey, visibility = true) {
   updateVariant('Martingale_Belt', "none", true, visibility);
 }
 
+// Fix the inverted box pleat function to use correct mesh names
 function invertedBoxPleat(styleKey, visibility = true) {
 
   function updatePleatButtons(visibility) {
     const pleatButtonsGroup = loadedMeshes['Buttons'];
-    pleatButtonsGroup.traverse((child) => {
-      if (child.name === "pleat_buttons") {
-        child.visible = visibility;
-        child.traverse((subChild) => {
-          subChild.visible = visibility;
-        });
-      }
-    });
+    if (pleatButtonsGroup) {
+      pleatButtonsGroup.traverse((child) => {
+        if (child.name === "pleat_buttons") {
+          child.visible = visibility;
+          child.traverse((subChild) => {
+            subChild.visible = visibility;
+          });
+        }
+      });
+    }
   }
 
   if (styleKey == "false" || styleKey == false || styleKey == "true" || styleKey == true) {
@@ -505,6 +513,7 @@ function invertedBoxPleat(styleKey, visibility = true) {
     console.warn(`Unsupported buttoning type for inverted box pleat: ${buttoningConfig}`);
     return;
   }
+
   const targetPleatVariant = pleatVariantMap[pleatKey];
   if (targetPleatVariant) {
     updatePleatButtons(true);
@@ -534,6 +543,7 @@ function updateSidePocket(styleKey) {
   updateVariant('Sidepocket', sidePocketMap[styleKey]);
 }
 
+// Fix the sleeve design function to use correct mesh names
 function updateSleeveDesign(styleKey) {
   const sleeveDesignMap = {
     'un-cuffed': 'un_cuffed',
@@ -1426,7 +1436,13 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
 
       if (colorTextureLoaded) {
         // Apply button fabric texture to all button elements except buttonhole lapel elements
-        applyTexturesToGroups(colorTexture, null, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002', 'lapel']);
+        applyTexturesToGroups(colorTexture, null, [
+          'Buttons', '2_Buttons', '6_buttons', 'belt_button', 'belt_buttons',
+          'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'
+        ], materialOptions, [
+          'Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003',
+          'one_strap002', 'lapel', 'buttonhole_lapel'
+        ]);
       }
     },
     undefined,
@@ -1445,7 +1461,13 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
 
         if (colorTextureLoaded && normalTextureLoaded) {
           // Apply button fabric texture to all button elements except buttonhole lapel elements
-          applyTexturesToGroups(colorTexture, normalTexture, ['Buttons', '2_Buttons', '6_buttons', 'belt_buttons', 'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'], materialOptions, ['Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003', 'one_strap002', 'lapel']);
+          applyTexturesToGroups(colorTexture, normalTexture, [
+            'Buttons', '2_Buttons', '6_buttons', 'belt_button', 'belt_buttons',
+            'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'
+          ], materialOptions, [
+            'Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003',
+            'one_strap002', 'lapel'
+          ]);
         }
       },
       undefined,
@@ -1743,6 +1765,7 @@ window.addEventListener('resize', () => {
   renderer.setSize(viewerWidth, viewerHeight);
 });
 
+// Fix the button scaling function to use correct mesh names
 function scaleButtonsOnXAxis(scaleFactor = 1.2) {
   if (!suitGroup) {
     console.warn('Suit group not found');
@@ -1751,12 +1774,8 @@ function scaleButtonsOnXAxis(scaleFactor = 1.2) {
 
   // Define all button group names that should be scaled
   const buttonGroups = [
-    'Buttons', '2_Buttons', '6_buttons', 'belt_button',
-    'pleat_buttons', 'notch_lapel_left_button', 'notch_lapel_right_button',
-    'peak_left_button', 'peak_right_button', 'notchpeak_lapel_left_button',
-    'notchpeak_lapel_right_button', 'notch_left_Handmade_milanese', 'notch_right_Handmade_milanese',
-    'peak_left_Handmade_milanese', 'peak_right_Handmade_milanese', 'notchpeak_left_Handmade_milanese',
-    'notchpeak_right_Handmade_milanese'
+    'Buttons', '2_Buttons', '6_buttons', 'belt_button', 'belt_buttons',
+    'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'
   ];
 
   // Function to scale a mesh or group on X axis
