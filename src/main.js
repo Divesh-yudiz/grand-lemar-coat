@@ -572,7 +572,7 @@ function updateLinings(visibility = true) {
   // Determine lining type based on buttoning (this logic remains the same)
   let liningType;
   if (buttoningConfig === 'single_breasted_2') {
-    liningType = 'half';
+    liningType = 'full';
   } else if (buttoningConfig === 'double_breasted_6') {
     liningType = 'full';
   } else {
@@ -584,7 +584,7 @@ function updateLinings(visibility = true) {
 
   const liningMap = {
     full: 'full',
-    half: 'half',
+    half: 'full',
   };
 
   function updateSleeveLinings() {
@@ -1098,7 +1098,7 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
  * @param {string} normalTextureUrl - URL or path to the fabric normal texture
  * @param {Object} materialOptions - Additional material properties
  */
-function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'shoulders', 'vent', 'ChestPocket', 'lapel', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt'], excludeGroups = ['Buttons', 'lining', 'full', 'half']) {
+function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'shoulders', 'vent', 'ChestPocket', 'lapel', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt'], excludeGroups = ['Buttons', 'lining', 'full']) {
   const textureLoader = new THREE.TextureLoader();
   let colorTextureLoaded = false;
   let normalTextureLoaded = false;
@@ -1590,7 +1590,7 @@ function loadAndApplyLiningFabric(colorTextureUrl, normalTextureUrl, materialOpt
       colorTextureLoaded = true;
 
       if (colorTextureLoaded && normalTextureLoaded) {
-        applyTexturesToGroups(colorTexture, normalTexture, ['LiningSleeve', 'full', 'half'], materialOptions, ['Front', 'shoulders', 'vent', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt', 'Buttons', 'lapel']);
+        applyTexturesToGroups(colorTexture, normalTexture, ['LiningSleeve', 'full'], materialOptions, ['Front', 'shoulders', 'vent', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt', 'Buttons', 'lapel']);
       }
     },
     undefined,
@@ -1607,7 +1607,7 @@ function loadAndApplyLiningFabric(colorTextureUrl, normalTextureUrl, materialOpt
       normalTextureLoaded = true;
 
       if (colorTextureLoaded && normalTextureLoaded) {
-        applyTexturesToGroups(colorTexture, normalTexture, ['LiningSleeve', 'full', 'half'], materialOptions, ['Front', 'shoulders', 'vent', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt', 'Buttons', 'lapel']);
+        applyTexturesToGroups(colorTexture, normalTexture, ['LiningSleeve', 'full'], materialOptions, ['Front', 'shoulders', 'vent', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt', 'Buttons', 'lapel']);
       }
     },
     undefined,
