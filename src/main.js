@@ -8,6 +8,8 @@ import fabric1 from './assets/fabrics/color2.png';
 import uv1 from './assets/fabrics/uv2.png';
 import fabric2 from './assets/fabrics/color.jpeg';
 import uv2 from './assets/fabrics/uv.png';
+import fabric3 from './assets/fabrics/color3.jpg';
+import uv3 from './assets/fabrics/uv.png';
 import buttonFabric3 from './assets/fabrics/C221-2.png';
 import buttonFabric2 from './assets/fabrics/MH1_Black-with-small-stain.png';
 import buttonFabric1 from './assets/fabrics/MH3_Dark-Brown_.png';
@@ -81,6 +83,11 @@ const CONFIG = {
       color: fabric2,
       normal: uv2,
       name: 'Light Beige'
+    },
+    fabric3: {
+      color: fabric3,
+      normal: uv3,
+      name: 'Linen'
     }
   },
 
@@ -324,7 +331,7 @@ function updateVariant(groupName, visibleChildName, toggle = true, visibility = 
 }
 
 function applyDefaultConfig() {
-  scaleButtonsOnXAxis(1.09);
+  // scaleButtonsOnXAxis(1.09);
   updateLapelStyle(CONFIG.defaults.lapelStyle);
   updateButtoning(CONFIG.defaults.buttoning);
   updateShoulders(CONFIG.defaults.shoulder);
@@ -400,8 +407,8 @@ function updateFront() {
 function updateShoulders(styleKey) {
   const shoulderMap = {
     Structured: 'Structured',
-    Unconstructed: '_Unconstructed',
-    Lightly_Padded: '_Lightly_Padded',
+    Unconstructed: 'Unconstructed',
+    Lightly_Padded: 'Lightly_Padded',
   };
 
   currentShoulder = styleKey;
@@ -499,7 +506,7 @@ function invertedBoxPleat(styleKey, visibility = true) {
     '6_Buttons_Unconstructed': '6button_Unconstructed_Inverted_box_pleat',
     '6_Buttons_Lightly_Padded': '6buttonLightly_Padded_Inverted_box_pleat',
     '2_Buttons_Structured': 'Structured_Inverted_box_pleat_2Button',
-    '2_Buttons_Unconstructed': '_Unconstructed_Inverted_box_pleat_2Button',
+    '2_Buttons_Unconstructed': 'Unconstructed_Inverted_box_pleat_2Button',
     '2_Buttons_Lightly_Padded': 'Lightly_Padded_Inverted_box_pleat_2Button'
   };
 
@@ -557,7 +564,7 @@ function updateSleeveDesign(styleKey) {
     updateVariant('sleave_buttons', 'sec_strap', true);
   } else if (styleKey === 'sleeve-strap') {
     updateVariant('sleave_buttons', 'one_strap_button', true);
-  } else if (styleKey === 'un-cuffed') {
+  } else if (styleKey === 'un-cuffed' || styleKey === 'cuffed') {
     updateVariant('sleave_buttons', 'none', true);
   }
 
@@ -616,13 +623,8 @@ function updateVent(ventType) {
   // First, hide both vent groups initially
   updateVariant('vent', "none", true, false);
   updateVariant('no_vent', "none", true, false);
-
-  console.log("martingaleBeltValue", martingaleBeltValue);
-  console.log("invertedBoxPleatValue", invertedBoxPleatValue);
-  console.log("currentVent", currentVent);
   // If there's a martingale belt or inverted box pleat, show no vent
   if (currentVent === "none" && (invertedBoxPleatValue === "false" || invertedBoxPleatValue === false)) {
-    console.log("checkpoint 1")
     // Create the key for no vent based on buttoning and shoulder
     const noVentKey = buttoningConfig === 'single_breasted_2' ?
       `2Button_${shoulderConfig}` :
@@ -650,13 +652,12 @@ function updateVent(ventType) {
 
   // Only show vent options when there's no martingale belt and no inverted box pleat
   if (invertedBoxPleatValue === "false" || invertedBoxPleatValue === false) {
-    console.log("checkpoint 2")
+
     // Get the vent type from UI config (ventType parameter or current selection)
-    console.log("currentVent", currentVent);
     const selectedVentType = ventType || getConfigValue('vent') || CONFIG.defaults.vent;
     console.log("selectedVentType", selectedVentType);
     if (selectedVentType === 'single') {
-      console.log("checkpoint 3")
+
       // Show single vent with appropriate variant based on buttoning and shoulder
       const ventKey = buttoningConfig === 'single_breasted_2' ?
         `2Button_${shoulderConfig}` :
@@ -1534,7 +1535,7 @@ function applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOpt
   // Function to apply textures to buttonhole lapel meshes
   function applyTexturesToButtonholeMesh(mesh) {
     if (mesh.isMesh && buttonholeLapelMeshes.includes(mesh.name)) {
-      console.log("✅ Applying fabric texture to buttonhole lapel:", mesh.name);
+      // console.log("✅ Applying fabric texture to buttonhole lapel:", mesh.name);
 
       // Force material update and ensure proper material properties
       if (!mesh.material) {
