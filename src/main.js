@@ -3,6 +3,7 @@ import { OrbitControls } from "https://esm.sh/three@0.169.0/examples/jsm/control
 import { GLTFLoader } from "https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js";
 import { EffectComposer } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/RenderPass.js";
+import { SMAAPass } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/SMAAPass.js";
 import poloCoaModel from './assets/polo_coat.glb';
 import fabric1 from './assets/fabrics/color2.png';
 import uv1 from './assets/fabrics/uv2.png';
@@ -146,10 +147,10 @@ function initThree() {
   const viewerHeight = viewerDiv.clientHeight;
 
   camera = new THREE.OrthographicCamera(
-    viewerWidth / -650,
-    viewerWidth / 650,
-    viewerHeight / 650,
-    viewerHeight / -650,
+    viewerWidth / -720,
+    viewerWidth / 720,
+    viewerHeight / 720,
+    viewerHeight / -720,
     1,
     1000
   );
@@ -157,12 +158,17 @@ function initThree() {
   camera.updateProjectionMatrix();
   camera.lookAt(0, 0, 0);
 
+  // Update the renderer configuration
   renderer = new THREE.WebGLRenderer({
     alpha: true,
     antialias: true,
     preserveDrawingBuffer: true,
     powerPreference: "high-performance",
   });
+
+  // Enable MSAA
+  renderer.antialias = true;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   renderer.shadowMap.enabled = true;
   renderer.gammaInput = true;
@@ -174,6 +180,12 @@ function initThree() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   composer = new EffectComposer(renderer);
+
+  const smaaPass = new SMAAPass(
+    renderer.getSize(new THREE.Vector2()).x * renderer.getPixelRatio(),
+    renderer.getSize(new THREE.Vector2()).y * renderer.getPixelRatio()
+  );
+  composer.addPass(smaaPass);
   renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
@@ -190,8 +202,8 @@ function initThree() {
   // Create directional light that will follow camera with offset
   cameraFollowLight = new THREE.DirectionalLight(0xffffff, 3.9);
   cameraFollowLight.castShadow = true;
-  cameraFollowLight.shadow.mapSize.width = 2048;
-  cameraFollowLight.shadow.mapSize.height = 2048;
+  cameraFollowLight.shadow.mapSize.width = 4096;  // Increased from 2048
+  cameraFollowLight.shadow.mapSize.height = 4096; // Increased from 2048
   cameraFollowLight.shadow.camera.near = 0.5;
   cameraFollowLight.shadow.camera.far = 50;
   cameraFollowLight.shadow.camera.left = -10;
@@ -203,12 +215,15 @@ function initThree() {
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);
   // controls.enableDamping = true;
+  // controls.dampingFactor = 0.05;
   // controls.enablePan = false;
   // controls.minPolarAngle = Math.PI / 2;
   // controls.maxPolarAngle = Math.PI / 2;
   // controls.minZoom = 0.75;
   // controls.maxZoom = 1.5;
   // controls.enableZoom = false;
+  // controls.rotateSpeed = 0.5;
+  // controls.autoRotate = false;
 
 
   suitGroup = new THREE.Group();
@@ -223,6 +238,9 @@ function initThree() {
 // Remove the entire initGUI function
 
 function animate() {
+  // Update controls for smooth damping
+  controls.update();
+
   if (cameraFollowLight) {
     const offset = new THREE.Vector3(lightOffset.x, lightOffset.y, lightOffset.z);
     offset.applyQuaternion(camera.quaternion);
@@ -1023,7 +1041,7 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
     texture.encoding = THREE.sRGBEncoding;
 
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
-    texture.anisotropy = maxAnisotropy;
+    texture.anisotropy = maxAnisotropy
 
     texture.generateMipmaps = true;
     texture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -1497,7 +1515,7 @@ function applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOpt
     texture.encoding = THREE.sRGBEncoding;
 
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
-    texture.anisotropy = maxAnisotropy;
+    texture.anisotropy = Math.min(maxAnisotropy, 16); // Cap at 16 for performance
 
     texture.generateMipmaps = true;
     texture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -1763,7 +1781,17 @@ window.addEventListener('resize', () => {
   camera.top = viewerHeight / 650;
   camera.bottom = viewerHeight / -650;
   camera.updateProjectionMatrix();
+
   renderer.setSize(viewerWidth, viewerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Add this line
+
+  // Update FXAA resolution if you added it
+  if (composer.passes.length > 1) {
+    const fxaaPass = composer.passes[1];
+    const pixelRatio = renderer.getPixelRatio();
+    fxaaPass.material.uniforms['resolution'].value.x = 1 / (viewerWidth * pixelRatio);
+    fxaaPass.material.uniforms['resolution'].value.y = 1 / (viewerHeight * pixelRatio);
+  }
 });
 
 // Fix the button scaling function to use correct mesh names
