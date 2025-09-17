@@ -653,7 +653,7 @@ function updateVent(ventType) {
       '6Button_Unconstructed': '6Button_vent_Unconstructed_novent',
       '6Button_Lightly_Padded': '6Button_lightly_Padded_novent',
       '2Button_Structured': '2button_vent_Structured_novent',
-      '2Button_Unconstructed': '2button_vent_unconstructured_novent',
+      '2Button_Unconstructed': "2Button_vent_Unconstructed_novent",
       '2Button_Lightly_Padded': '2button_vent_lightly_padded_no_vent'
     };
 
@@ -712,7 +712,7 @@ function updateVent(ventType) {
         '6Button_Unconstructed': '6Button_vent_Unconstructed_novent',
         '6Button_Lightly_Padded': '6Button_lightly_Padded_novent',
         '2Button_Structured': '2button_vent_Structured_novent',
-        '2Button_Unconstructed': '2button_vent_unconstructured_novent',
+        '2Button_Unconstructed': "2Button_vent_Unconstructed_novent",
         '2Button_Lightly_Padded': '2button_vent_lightly_padded_no_vent'
       };
 
@@ -1090,6 +1090,10 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
       if (normalTexture) {
         mesh.material.normalMap = normalTexture;
         mesh.material.normalMap.needsUpdate = true;
+      }
+
+      if (mesh.material.name === "Line_Mat" || mesh.material.name === "Thread_Mat") {
+        mesh.material.color.setScalar(0.7);
       }
 
       mesh.material.polygonOffset = true;
@@ -1705,6 +1709,7 @@ function loadAndApplyLiningFabric(colorTextureUrl, normalTextureUrl, materialOpt
     colorTextureUrl,
     (texture) => {
       colorTexture = texture;
+      // colorTexture.color.setScalar(0.7);
       colorTextureLoaded = true;
 
       if (colorTextureLoaded && normalTextureLoaded) {
