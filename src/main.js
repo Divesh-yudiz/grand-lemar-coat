@@ -1112,6 +1112,103 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
 }
 
 /**
+ * Unified function to apply textures to specific mesh groups with material name constraint
+ * @param {THREE.Texture} colorTexture - The fabric color texture to apply
+ * @param {THREE.Texture} normalTexture - The fabric normal texture to apply
+ * @param {Array} targetGroups - Array of group names to apply textures to
+ * @param {Object} materialOptions - Additional material properties
+ * @param {Array} excludeGroups - Array of group names to exclude
+ * @param {string} excludeMaterialName - Material name to exclude from texture application
+ */
+function applyTexturesToGroupsWithMaterialConstraint(colorTexture, normalTexture, targetGroups, materialOptions = {}, excludeGroups = [], excludeMaterialName = '') {
+  if (!suitGroup || !targetGroups || targetGroups.length === 0) return;
+
+  // Configure texture settings
+  const configureTexture = (texture) => {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.encoding = THREE.sRGBEncoding;
+
+    const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.anisotropy = maxAnisotropy
+
+    texture.generateMipmaps = true;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+
+    const repeatX = materialOptions.repeat?.[0] || 10;
+    const repeatY = materialOptions.repeat?.[1] || 10;
+    texture.repeat.set(repeatX, repeatY);
+  };
+
+  // Configure both textures
+  configureTexture(colorTexture);
+  if (normalTexture) {
+    configureTexture(normalTexture);
+  }
+
+  // Function to check if a mesh belongs to target groups
+  function isTargetGroup(mesh) {
+    if (!mesh.name) return false;
+
+    // Check if mesh is in exclude groups
+    if (excludeGroups.some(exclude => mesh.name.toLowerCase().includes(exclude.toLowerCase()))) {
+      return false;
+    }
+
+    // Check if mesh is in target groups
+    return targetGroups.some(target => mesh.name.toLowerCase().includes(target.toLowerCase()));
+  }
+
+  // Function to check if a mesh belongs to target groups (including parent hierarchy)
+  function isInTargetGroup(mesh) {
+    if (isTargetGroup(mesh)) return true;
+
+    let parent = mesh.parent;
+    while (parent) {
+      if (isTargetGroup(parent)) return true;
+      parent = parent.parent;
+    }
+    return false;
+  }
+
+  // Function to check if material name should be excluded
+  function shouldExcludeMaterial(mesh) {
+    if (!excludeMaterialName || !mesh.material) return false;
+
+    // Check if material name matches the exclude pattern
+    return mesh.material.name === excludeMaterialName;
+  }
+
+  // Function to apply textures to a mesh
+  function applyTexturesToMesh(mesh) {
+    if (mesh.isMesh && mesh.material && isInTargetGroup(mesh) && !shouldExcludeMaterial(mesh)) {
+      mesh.material.map = colorTexture;
+      if (normalTexture) {
+        mesh.material.normalMap = normalTexture;
+        mesh.material.normalMap.needsUpdate = true;
+      }
+
+      mesh.material.polygonOffset = true;
+      mesh.material.polygonOffsetFactor = 1;
+      mesh.material.polygonOffsetUnits = 1;
+
+      mesh.material.depthWrite = true;
+      mesh.material.depthTest = true;
+      mesh.material.roughness = 1;
+      mesh.material.metalness = 0.5;
+
+      mesh.material.needsUpdate = true;
+    }
+  }
+
+  // Traverse and apply textures
+  suitGroup.traverse((child) => {
+    applyTexturesToMesh(child);
+  });
+}
+
+/**
  * Load and apply fabric textures to the model
  * @param {string} colorTextureUrl - URL or path to the fabric color texture
  * @param {string} normalTextureUrl - URL or path to the fabric normal texture
@@ -1455,13 +1552,14 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
 
       if (colorTextureLoaded) {
         // Apply button fabric texture to all button elements except buttonhole lapel elements
-        applyTexturesToGroups(colorTexture, null, [
+        // Exclude meshes with material name "Thread_Mat"
+        applyTexturesToGroupsWithMaterialConstraint(colorTexture, null, [
           'Buttons', '2_Buttons', '6_buttons', 'belt_button', 'belt_buttons',
           'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'
         ], materialOptions, [
           'Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003',
           'one_strap002', 'lapel', 'buttonhole_lapel'
-        ]);
+        ], 'Thread_Mat');
       }
     },
     undefined,
@@ -1480,13 +1578,14 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
 
         if (colorTextureLoaded && normalTextureLoaded) {
           // Apply button fabric texture to all button elements except buttonhole lapel elements
-          applyTexturesToGroups(colorTexture, normalTexture, [
+          // Exclude meshes with material name "Thread_Mat"
+          applyTexturesToGroupsWithMaterialConstraint(colorTexture, normalTexture, [
             'Buttons', '2_Buttons', '6_buttons', 'belt_button', 'belt_buttons',
             'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'
           ], materialOptions, [
             'Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003',
             'one_strap002', 'lapel'
-          ]);
+          ], 'Thread_Mat');
         }
       },
       undefined,
