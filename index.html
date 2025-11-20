@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grand Le Mar</title>
+  <title>Overcoat</title>
   <link rel="stylesheet" href="./src/style.css">
 </head>
 
@@ -62,8 +62,8 @@
         <div class="config-row">
           <span class="config-label">BUTTONING</span>
           <select class="config-select" id="buttoning-select">
-            <option value="single_breasted_2">SINGLE BREASTED: 2.5 BUTTONS</option>
             <option value="double_breasted_6">DOUBLE BREASTED: 6 BUTTONS</option>
+            <option value="single_breasted_2">SINGLE BREASTED: 2.5 BUTTONS</option>
           </select>
         </div>
       </div>
@@ -83,19 +83,9 @@
         <div class="config-row">
           <span class="config-label">SHOULDER</span>
           <select class="config-select" id="shoulder-select">
-            <option value="Structured">STRUCTURED (5 MM)</option>
-            <option value="Lightly_Padded">LIGHTLY PADDED (2 MM)</option>
             <option value="Unconstructed">UNCONSTRUCTED (0 MM)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="config-section">
-        <div class="config-row">
-          <span class="config-label">MARTINGALE BELT</span>
-          <select class="config-select" id="martingale-belt-select">
-            <option value="true">TRUE</option>
-            <option value="false">FALSE</option>
+            <option value="Lightly_Padded">LIGHTLY PADDED (2 MM)</option>
+            <option value="Structured">STRUCTURED (5 MM)</option>
           </select>
         </div>
       </div>
@@ -104,8 +94,18 @@
         <div class="config-row">
           <span class="config-label">INVERTED BOX PLEAT</span>
           <select class="config-select" id="inverted-box-pleat-select">
-            <option value="true">TRUE</option>
-            <option value="false">FALSE</option>
+            <option value="true">YES</option>
+            <option value="false">NO</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-row">
+          <span class="config-label">MARTINGALE BELT</span>
+          <select class="config-select" id="martingale-belt-select">
+            <option value="true">YES</option>
+            <option value="false">NO</option>
           </select>
         </div>
       </div>
@@ -114,8 +114,8 @@
         <div class="config-row">
           <span class="config-label">VENT</span>
           <select class="config-select" id="vent-select">
-            <option value="None">NONE</option>
-            <option value="Single">SINGLE</option>
+            <option value="vent_Single_with_Button">SINGLE VENT WITH BUTTON</option>
+            <option value="single">SINGLE</option>
           </select>
         </div>
       </div>
@@ -134,9 +134,9 @@
         <div class="config-row">
           <span class="config-label">SIDE POCKET</span>
           <select class="config-select" id="side-pocket-select">
-            <option value="slanted-welt">SLANTED WELT</option>
             <option value="postbox">POSTBOX</option>
-            <option value="path-with-flaps">PATCH WITH FLAPS</option>
+            <option value="flaps">FLAPS</option>
+            <option value="slanted-welt">SLANTED WELT</option>
             <option value="jetted">JETTED</option>
           </select>
         </div>
@@ -148,8 +148,6 @@
           <select class="config-select" id="sleeve-design-select">
             <option value="cuffed">CUFFED</option>
             <option value="un-cuffed">UN-CUFFED</option>
-            <option value="sleeve-strap">SLEEVE STRAP</option>
-            <option value="sleeve-strap-with-buttons">FULL SLEEVE STRAP WITH BUTTONS</option>
           </select>
         </div>
       </div>
@@ -159,7 +157,7 @@
           <span class="config-label">LINING</span>
           <select class="config-select" id="lining-select">
             <option value="full-lining">FULL LINING</option>
-            <option value="unlined">UNLINED</option>
+            <!-- <option value="unlined">UNLINED</option> -->
           </select>
         </div>
       </div>
@@ -201,7 +199,7 @@
             </div>
             <div class="fabric-option" data-fabric="button-fabric3">
               <img src="./src/assets/fabrics/C221-2.png" alt="Navy Button Fabric" class="fabric-image">
-              <span class="fabric-name">Navy</span>
+              <span class="fabric-name">Beige</span>
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { GLTFLoader } from "https://esm.sh/three@0.169.0/examples/jsm/loaders/GL
 import { EffectComposer } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/RenderPass.js";
 import { SMAAPass } from "https://esm.sh/three@0.169.0/examples/jsm/postprocessing/SMAAPass.js";
-import poloCoaModel from './assets/polo_coat.glb';
+import overCoatModel from './assets/overCoat.glb';
 import fabric1 from './assets/fabrics/color2.png';
 import uv1 from './assets/fabrics/uv2.png';
 import fabric2 from './assets/fabrics/color.jpeg';
@@ -17,7 +17,7 @@ import buttonFabric1 from './assets/fabrics/MH3_Dark-Brown_.png';
 
 // ----- Global Variables -----
 let scene, camera, renderer, controls, suitGroup, composer, renderPass;
-let aLight = [], dirLight2, dirLight3, backLight;
+let aLight = [], dirLight2, dirLight3, backLight, backLight2;
 let cameraFollowLight; // Add this new variable
 const loadedMeshes = {};
 
@@ -29,22 +29,22 @@ let lightOffset = {
 };
 
 // Add buttonhole lapel style to global variables
-let currentButtoning, currentLapelStyle, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings, currentVent = 'none', currentButtonholeLapelPosition, currentButtonholeLapel;
+let currentButtoning, currentLapelStyle, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings, currentVent = 'single', currentButtonholeLapelPosition, currentButtonholeLapel;
 
 // ----- Configuration Data -----
 const CONFIG = {
   defaults: {
-    buttoning: 'single_breasted_2',
-    lapelStyle: 'notch',
-    shoulder: 'Structured',
+    buttoning: 'double_breasted_6',
+    lapelStyle: 'notchpeak',
+    shoulder: 'Unconstructed',
     martingaleBelt: true,
     invertedBoxPleat: true,
     chestPocket: "boat",
-    sidePocket: "slanted-welt",
+    sidePocket: "postbox",
     sleeveDesign: "cuffed",
     linings: true,
-    vent: "Structured",
-    buttonholeLapelPosition: "left",
+    vent: "single",
+    buttonholeLapelPosition: "both",
     buttonholeLapel: "traditional", // Add this line
     fabric: "fabric1",
     buttonFabric: "button-fabric1", // Add button fabric default
@@ -53,7 +53,7 @@ const CONFIG = {
   // Define which lapel styles are available for each buttoning type
   lapelConstraints: {
     single_breasted_2: ['notch', 'peak'],
-    double_breasted_6: ['notchpeak']
+    double_breasted_6: ['notchpeak', 'peak']
   },
 
   assets: {
@@ -192,10 +192,10 @@ function initThree() {
   document.getElementById("viewer").appendChild(renderer.domElement);
 
   // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
   scene.add(ambientLight);
 
-  backLight = new THREE.DirectionalLight(0xffffff, 1);
+  backLight = new THREE.DirectionalLight(0xffffff, 1.5);
   scene.add(backLight);
   backLight.position.set(10, 0, 10);
 
@@ -214,16 +214,16 @@ function initThree() {
 
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);
-  // controls.enableDamping = true;
-  // controls.dampingFactor = 0.05;
-  // controls.enablePan = false;
-  // controls.minPolarAngle = Math.PI / 2;
-  // controls.maxPolarAngle = Math.PI / 2;
-  // controls.minZoom = 0.75;
-  // controls.maxZoom = 1.5;
-  // controls.enableZoom = false;
-  // controls.rotateSpeed = 0.5;
-  // controls.autoRotate = false;
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.enablePan = false;
+  controls.minPolarAngle = Math.PI / 2;
+  controls.maxPolarAngle = Math.PI / 2;
+  controls.minZoom = 0.75;
+  controls.maxZoom = 1.5;
+  controls.enableZoom = false;
+  controls.rotateSpeed = 0.5;
+  controls.autoRotate = false;
 
 
   suitGroup = new THREE.Group();
@@ -309,8 +309,6 @@ async function storeTopLevelGroups(root) {
 
 function updateVariant(groupName, visibleChildName, toggle = true, visibility = true) {
   const group = loadedMeshes[groupName]; // e.g., lapel, Buttons, shoulders
-
-
   if (!group) {
     console.warn(`Group '${groupName}' not found`);
     return;
@@ -360,7 +358,7 @@ function applyDefaultConfig() {
   updateSidePocket(CONFIG.defaults.sidePocket);
   updateSleeveDesign(CONFIG.defaults.sleeveDesign);
   updateLinings(); // Remove parameter, let it determine dynamically
-  updateVent();
+  updateVent(CONFIG.defaults.vent);
   updateButtonholeLapelPosition(CONFIG.defaults.buttonholeLapelPosition);
   updateButtonholeLapel(CONFIG.defaults.buttonholeLapel); // Add this line
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
@@ -375,10 +373,19 @@ function updateLapelStyle(styleKey) {
   const lapelMap = {
     notch: 'noatch',
     peak: 'Peak',
+    DB_peak: 'DB_peak',
     notchpeak: 'notchpeak'
   };
+
+  // Determine the appropriate lapel mapping based on buttoning type and selected style
+  if (styleKey === 'peak' && (currentButtoning === 'double_breasted_6' || currentButtoning === '6_buttons')) {
+    styleKey = 'DB_peak'; // Use DB_peak if double breasted and peak is selected
+  }
+
   currentLapelStyle = styleKey;
   updateVariant('lapel', lapelMap[styleKey]);
+
+  // Update the buttonhole lapel position when the lapel style changes
   updateButtonholeLapelPosition(currentButtonholeLapelPosition || CONFIG.defaults.buttonholeLapelPosition);
 }
 
@@ -508,10 +515,12 @@ function invertedBoxPleat(styleKey, visibility = true) {
     currentInvertedBoxPleat = styleKey;
   }
 
-  if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
+  if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false || currentVent === "single") {
     updateVariant('Inverted_Box_Pleat', "none", true, false);
-    updatePleatButtons(false);
-    updateVent();
+    updateVent(CONFIG.defaults.vent);
+    if (currentVent != "single") {
+      updatePleatButtons(false);
+    }
     return;
   }
 
@@ -560,7 +569,7 @@ function updateChestPocket(styleKey) {
 function updateSidePocket(styleKey) {
   const sidePocketMap = {
     'jetted': 'jetted_pocket',
-    'path-with-flaps': 'Patch',
+    'flaps': 'Patch',
     'postbox': 'postbox_pocket',
     'slanted-welt': 'slanted',
   };
@@ -627,60 +636,98 @@ function updateLinings(visibility = true) {
   updateSleeveLinings();
 }
 
-function updateVent(ventType) {
-  if (currentInvertedBoxPleat === "true" || currentInvertedBoxPleat === true) {
-    updateVariant('vent', "none", true, false);
-    updateVariant('no_vent', "none", true, false);
-    return;
+function updateVent(ventType = currentVent) {
+  console.log("updateVent", ventType);
+  // Helper function to show/hide pleat buttons
+  function updatePleatButtons(visibility) {
+    const pleatButtonsGroup = loadedMeshes['Buttons'];
+    if (pleatButtonsGroup) {
+      pleatButtonsGroup.traverse((child) => {
+        if (child.name === "pleat_buttons") {
+          child.visible = visibility;
+          child.traverse((subChild) => {
+            subChild.visible = visibility;
+          });
+        }
+      });
+    }
   }
+
   const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
   const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
-  const martingaleBeltValue = currentMartingaleBelt || CONFIG.defaults.martingaleBelt;
-  const invertedBoxPleatValue = currentInvertedBoxPleat || CONFIG.defaults.invertedBoxPleat;
+  const martingaleBeltValue = currentMartingaleBelt ?? CONFIG.defaults.martingaleBelt;
+  const invertedBoxPleatValue = currentInvertedBoxPleat ?? CONFIG.defaults.invertedBoxPleat;
+  const isMartingaleEnabled = martingaleBeltValue === true || martingaleBeltValue === "true";
+  const isPleatEnabled = invertedBoxPleatValue === true || invertedBoxPleatValue === "true";
 
-  // First, hide both vent groups initially
+  // Reset all vent groups off
   updateVariant('vent', "none", true, false);
+  updateVariant('vent_Single_with_Button', "none", true, false);
   updateVariant('no_vent', "none", true, false);
-  // If there's a martingale belt or inverted box pleat, show no vent
-  if (currentVent === "none" && (invertedBoxPleatValue === "false" || invertedBoxPleatValue === false)) {
-    // Create the key for no vent based on buttoning and shoulder
-    const noVentKey = buttoningConfig === 'single_breasted_2' ?
-      `2Button_${shoulderConfig}` :
-      `6Button_${shoulderConfig}`;
+  updateVariant('pleat_with_single_vent', "none", true, false);
 
-    const noVentMap = {
-      '6Button_Structured': '6Button_Vent_Structured_novent',
-      '6Button_Unconstructed': '6Button_vent_Unconstructed_novent',
-      '6Button_Lightly_Padded': '6Button_lightly_Padded_novent',
-      '2Button_Structured': '2button_vent_Structured_novent',
-      '2Button_Unconstructed': "2Button_vent_Unconstructed_novent",
-      '2Button_Lightly_Padded': '2button_vent_lightly_padded_no_vent'
-    };
-
-    const targetNoVentVariant = noVentMap[noVentKey];
-    if (targetNoVentVariant) {
-      updateVariant('no_vent', targetNoVentVariant, true, true);
-    } else {
-      console.warn(`No no-vent variant found for: ${noVentKey}`);
-      updateVariant('no_vent', "none", true, true);
-    }
-    currentVent = "none";
+  if (ventType == "vent_Single_with_Button" && isPleatEnabled) {
+    currentVent = "vent_Single_with_Button";
+    invertedBoxPleat("true");
+    updatePleatButtons(true);
     return;
   }
 
-  // Only show vent options when there's no martingale belt and no inverted box pleat
-  if (invertedBoxPleatValue === "false" || invertedBoxPleatValue === false) {
+  // Determine selected vent from UI or default
+  let selectedVentType = ventType || getConfigValue('vent') || CONFIG.defaults.vent;
 
-    // Get the vent type from UI config (ventType parameter or current selection)
-    const selectedVentType = ventType || getConfigValue('vent') || CONFIG.defaults.vent;
-    console.log("selectedVentType", selectedVentType);
-    if (selectedVentType === 'single') {
+  // Helper to resolve map keys
+  const configKey = buttoningConfig === 'single_breasted_2'
+    ? `2Button_${shoulderConfig}`
+    : `6Button_${shoulderConfig}`;
 
-      // Show single vent with appropriate variant based on buttoning and shoulder
-      const ventKey = buttoningConfig === 'single_breasted_2' ?
-        `2Button_${shoulderConfig}` :
-        `6Button_${shoulderConfig}`;
+  const baseSingleVentMap = {
+    '6Button_Structured': '6Button_Vent_Structured',
+    '6Button_Unconstructed': '6Button_vent_Unconstructed',
+    '6Button_Lightly_Padded': '6Button_lightly_Padded',
+    '2Button_Structured': '2button_vent_Structured',
+    '2Button_Unconstructed': '2button_vent_unconstructured',
+    '2Button_Lightly_Padded': '2button_vent_lightly_padded'
+  };
 
+  // When martingale is disabled, we always fall back to single vent (standard vent, no pleat)
+  if (!isMartingaleEnabled) {
+    selectedVentType = 'single';
+    const targetVentVariant = baseSingleVentMap[configKey];
+    if (targetVentVariant) {
+      updateVariant('Inverted_Box_Pleat', "none", true, false);
+      updateVariant('pleat_with_single_vent', "none", true, false);
+      updateVariant('no_vent', "none", true, false);
+      updateVariant('vent', targetVentVariant, true, true);
+      updatePleatButtons(false);
+      currentVent = "single";
+    } else {
+      console.warn(`No vent variant found for martingale-off config: ${configKey}`);
+    }
+    return;
+  }
+
+  if (selectedVentType === 'single') {
+    if (isPleatEnabled) {
+      const pleatVentMap = {
+        '6Button_Structured': 'Structrured_pleat_Vent_6',
+        '6Button_Unconstructed': 'Unconstructed_pleat_Vent_6',
+        '6Button_Lightly_Padded': 'Lightly_Padded_pleat_Vent_6',
+        '2Button_Structured': 'Structrured_pleat_Vent_2',
+        '2Button_Unconstructed': 'Unconstructed_pleat_Vent_2',
+        '2Button_Lightly_Padded': 'Lightly_Padded_pleat_Vent_2'
+      };
+      const targetPleatVariant = pleatVentMap[configKey];
+      if (targetPleatVariant) {
+        // Hide the existing inverted pleat meshes when replacing them with the single-vent variant
+        updateVariant('Inverted_Box_Pleat', "none", true, false);
+        updateVariant('pleat_with_single_vent', targetPleatVariant, true, true);
+        updatePleatButtons(false);
+        currentVent = "single";
+      } else {
+        console.warn(`No pleat_with_single_vent variant found for: ${configKey}`);
+      }
+    } else {
       const ventMap = {
         '6Button_Structured': '6Button_Vent_Structured',
         '6Button_Unconstructed': '6Button_vent_Unconstructed',
@@ -689,41 +736,34 @@ function updateVent(ventType) {
         '2Button_Unconstructed': '2button_vent_unconstructured',
         '2Button_Lightly_Padded': '2button_vent_lightly_padded'
       };
-
-      const targetVentVariant = ventMap[ventKey];
-
+      const targetVentVariant = ventMap[configKey];
       if (targetVentVariant) {
         updateVariant('vent', targetVentVariant, true, true);
+        updatePleatButtons(false);
         currentVent = "single";
       } else {
-        console.warn(`No vent variant found for: ${ventKey}`);
-        updateVariant('no_vent', "none", true, true);
-        currentVent = "none";
+        console.warn(`No vent variant found for: ${configKey}`);
       }
-    } else if (selectedVentType === 'none') {
-      console.log("checkpoint 4")
-      // Show appropriate no vent variant based on buttoning and shoulder
-      const noVentKey = buttoningConfig === 'single_breasted_2' ?
-        `2Button_${shoulderConfig}` :
-        `6Button_${shoulderConfig}`;
+    }
+    return;
+  }
 
-      const noVentMap = {
-        '6Button_Structured': '6Button_Vent_Structured_novent',
-        '6Button_Unconstructed': '6Button_vent_Unconstructed_novent',
-        '6Button_Lightly_Padded': '6Button_lightly_Padded_novent',
-        '2Button_Structured': '2button_vent_Structured_novent',
-        '2Button_Unconstructed': "2Button_vent_Unconstructed_novent",
-        '2Button_Lightly_Padded': '2button_vent_lightly_padded_no_vent'
-      };
-
-      const targetNoVentVariant = noVentMap[noVentKey];
-      if (targetNoVentVariant) {
-        updateVariant('no_vent', targetNoVentVariant, true, true);
-      } else {
-        console.warn(`No no-vent variant found for: ${noVentKey}`);
-        updateVariant('no_vent', "none", true, true);
-      }
-      currentVent = "none";
+  if (selectedVentType === 'vent_Single_with_Button' && !isPleatEnabled) {
+    const ventWithButtonMap = {
+      '6Button_Structured': '6button_Structured_vent_Single',
+      '6Button_Unconstructed': '6button_Unconstructed_vent_Single',
+      '6Button_Lightly_Padded': '6buttonLightly_Padded_vent_Single',
+      '2Button_Structured': 'Structured_vent_Single',
+      '2Button_Unconstructed': "Unconstructed_vent_Single",
+      '2Button_Lightly_Padded': 'Lightly_Padded_vent_Single'
+    };
+    const targetVentWithButton = ventWithButtonMap[configKey];
+    if (targetVentWithButton) {
+      updateVariant('vent_Single_with_Button', targetVentWithButton, true, true);
+      updatePleatButtons(true);
+      currentVent = "vent_Single_with_Button";
+    } else {
+      console.warn(`No vent_Single_with_Button variant found for: ${configKey}`);
     }
   }
 }
@@ -739,7 +779,8 @@ function updateButtonholeLapelPosition(styleKey) {
   const lapelGroupMap = {
     notch: 'noatch',
     peak: 'Peak',
-    notchpeak: 'notchpeak'
+    notchpeak: 'notchpeak',
+    DB_peak: 'DB_peak',
   };
 
   const currentLapelGroup = lapelGroupMap[currentLapel];
@@ -756,7 +797,7 @@ function updateButtonholeLapelPosition(styleKey) {
     return;
   }
 
-  // Find the current lapel style group (noatch, Peak, or notchpeak)
+  // Find the current lapel style group (noatch, Peak, notchpeak, or DB_peak)
   const currentLapelStyleGroup = lapelGroup.children.find(child => child.name === currentLapelGroup);
   if (!currentLapelStyleGroup) {
     console.warn(`Lapel style group '${currentLapelGroup}' not found`);
@@ -783,6 +824,16 @@ function updateButtonholeLapelPosition(styleKey) {
       'handmade-milanese': {
         left: 'peak_left_Handmade_milanese',
         right: 'peak_right_Handmade_milanese'
+      }
+    },
+    DB_peak: {
+      traditional: {
+        left: 'peak_lapel_left_traditional',
+        right: 'peak_lapel_right_traditional'
+      },
+      'handmade-milanese': {
+        left: 'peak_left_Handmade_milanese001',
+        right: 'peak_right_Handmade_milanese001'
       }
     },
     notchpeak: {
@@ -1290,9 +1341,7 @@ function updateFabric(fabricKey) {
 
 // Add button fabric update function
 function updateButtonFabric(fabricKey) {
-  console.log("updateButtonFabric", fabricKey);
   const fabricConfig = CONFIG.buttonFabrics[fabricKey];
-  console.log("fabricConfig", fabricConfig);
   if (!fabricConfig) {
     console.warn(`❌ Button fabric configuration not found for: ${fabricKey}`);
     return;
@@ -1350,42 +1399,188 @@ function updateLiningFabricSelectionUI(selectedFabric) {
 function updateVentOptions() {
   const ventSelect = document.getElementById('vent-select');
   const martingaleBeltValue = getConfigValue('martingaleBelt');
-  const invertedBoxPleatValue = getConfigValue('invertedBoxPleat');
 
   // Clear current options
   ventSelect.innerHTML = '';
 
-  // If EITHER martingale belt OR inverted box pleat is true, only show "none"
-  if (martingaleBeltValue === true || invertedBoxPleatValue === true) {
-    const option = document.createElement('option');
-    option.value = 'none';
-    option.textContent = 'NONE';
-    ventSelect.appendChild(option);
+  const isMartingaleEnabled = martingaleBeltValue === true || martingaleBeltValue === 'true';
 
-    // Set the value to none and update the model
-    ventSelect.value = 'none';
-    CONFIG.defaults.vent = 'none';
-    updateVent();
-  } else {
-    // Show both "none" and "single" options only when neither is true
-    const noneOption = document.createElement('option');
-    noneOption.value = 'none';
-    noneOption.textContent = 'NONE';
-    ventSelect.appendChild(noneOption);
+  const singleOption = document.createElement('option');
+  singleOption.value = 'single';
+  singleOption.textContent = 'SINGLE';
+  ventSelect.appendChild(singleOption);
 
-    const singleOption = document.createElement('option');
-    singleOption.value = 'single';
-    singleOption.textContent = 'SINGLE';
-    ventSelect.appendChild(singleOption);
-
-    // Keep current selection if it's valid, otherwise default to 'none'
-    if (ventSelect.value !== 'none' && ventSelect.value !== 'single') {
-      ventSelect.value = 'none';
-      CONFIG.defaults.vent = 'none';
-    }
-
-    updateVent();
+  if (isMartingaleEnabled) {
+    const withButtonOption = document.createElement('option');
+    withButtonOption.value = 'vent_Single_with_Button';
+    withButtonOption.textContent = 'SINGLE VENT WITH BUTTON';
+    ventSelect.appendChild(withButtonOption);
   }
+
+  if (!isMartingaleEnabled || ventSelect.value !== 'vent_Single_with_Button') {
+    ventSelect.value = 'single';
+    CONFIG.defaults.vent = 'single';
+  }
+
+  updateVent(ventSelect.value);
+}
+
+function updateMartingaleBeltOptions() {
+  const martingaleBeltSelect = document.getElementById('martingale-belt-select');
+  const invertedBoxPleatValue = getConfigValue('invertedBoxPleat');
+  const currentLapelStyleValue = getConfigValue('lapelStyle');
+  const options = Array.from(martingaleBeltSelect.querySelectorAll('option'));
+  const shouldHideNoOption = invertedBoxPleatValue === true || invertedBoxPleatValue === 'true' || currentLapelStyleValue === 'notchpeak';
+  options.forEach(option => {
+    if (option.value === 'false') {
+      option.style.display = shouldHideNoOption ? 'none' : '';
+
+      // If the option is hidden and currently selected, force it to "true"
+      if (shouldHideNoOption && option.selected) {
+        martingaleBeltSelect.value = 'true';
+        CONFIG.defaults.martingaleBelt = 'true';
+        const isVisible = true;
+        currentMartingaleBelt = 'true';
+        martingaleBelt('true', isVisible);
+        updateVent();
+        updateVentOptions();
+      }
+    }
+  });
+}
+
+function updateInvertedBoxPleatOptions() {
+  const invertedBoxPleatSelect = document.getElementById('inverted-box-pleat-select');
+  const currentLapelStyleValue = getConfigValue('lapelStyle');
+  const options = Array.from(invertedBoxPleatSelect.querySelectorAll('option'));
+
+  // Check if "No" option should be hidden when lapel style is "notchpeak"
+  const shouldHideNoOption = currentLapelStyleValue === 'notchpeak';
+
+  options.forEach(option => {
+    if (option.value === 'false') {
+      option.style.display = shouldHideNoOption ? 'none' : '';
+
+      // If the option is hidden and currently selected, force it to "true"
+      if (shouldHideNoOption && option.selected) {
+        invertedBoxPleatSelect.value = 'true';
+        CONFIG.defaults.invertedBoxPleat = 'true';
+        currentInvertedBoxPleat = 'true';
+        invertedBoxPleat('true');
+        updateVent();
+        updateVentOptions();
+      }
+    }
+  });
+}
+
+// Add this function after the updateInvertedBoxPleatOptions function (around line 1430)
+function updateChestPocketOptions() {
+  const chestPocketSelect = document.getElementById('chest-pocket-select');
+  const currentLapelStyleValue = getConfigValue('lapelStyle');
+  const options = Array.from(chestPocketSelect.querySelectorAll('option'));
+
+  // Hide "none" option when lapel style is "notchpeak"
+  const shouldHideNoneOption = currentLapelStyleValue === 'notchpeak';
+
+  options.forEach(option => {
+    if (option.value === 'none') {
+      option.style.display = shouldHideNoneOption ? 'none' : '';
+
+      // If the option is hidden and currently selected, force it to "boat"
+      if (shouldHideNoneOption && option.selected) {
+        chestPocketSelect.value = 'boat';
+        CONFIG.defaults.chestPocket = 'boat';
+        currentChestPocket = 'boat';
+        updateChestPocket('boat');
+      }
+    }
+  });
+}
+
+// Add this function after the updateChestPocketOptions function
+function updateSidePocketOptions() {
+  const sidePocketSelect = document.getElementById('side-pocket-select');
+  const currentLapelStyleValue = getConfigValue('lapelStyle');
+  const options = Array.from(sidePocketSelect.querySelectorAll('option'));
+
+  // Hide slanted-welt, path-with-flaps, and jetted when lapel style is "notchpeak"
+  const shouldHideRestrictedOptions = currentLapelStyleValue === 'notchpeak';
+
+  // Define which options should be hidden when notchpeak is selected
+  const restrictedOptions = ['slanted-welt', 'flaps', 'jetted'];
+
+  options.forEach(option => {
+    if (restrictedOptions.includes(option.value)) {
+      option.style.display = shouldHideRestrictedOptions ? 'none' : '';
+
+      // If a restricted option is selected and we're switching to notchpeak, force it to "postbox"
+      if (shouldHideRestrictedOptions && option.selected) {
+        sidePocketSelect.value = 'postbox';
+        CONFIG.defaults.sidePocket = 'postbox';
+        currentSidePocket = 'postbox';
+        updateSidePocket('postbox');
+      }
+    } else if (option.value === 'postbox') {
+      // Ensure postbox is always visible
+      option.style.display = '';
+    }
+  });
+}
+
+// Add this function after updateSidePocketOptions
+function updateButtonholeLapelPositionOptions() {
+  const buttonholePositionSelect = document.getElementById('buttonhole-lapel-position-select');
+  const currentLapelStyleValue = getConfigValue('lapelStyle');
+  const options = Array.from(buttonholePositionSelect.querySelectorAll('option'));
+
+  // When notchpeak is selected, only "both" should be available
+  const shouldRestrictOptions = currentLapelStyleValue === 'notchpeak';
+
+  options.forEach(option => {
+    if (option.value !== 'both') {
+      // Hide left, right, and none options when notchpeak is selected
+      option.style.display = shouldRestrictOptions ? 'none' : '';
+
+      // If a restricted option is selected and we're switching to notchpeak, force it to "both"
+      if (shouldRestrictOptions && option.selected) {
+        buttonholePositionSelect.value = 'both';
+        CONFIG.defaults.buttonholeLapelPosition = 'both';
+        currentButtonholeLapelPosition = 'both';
+        updateButtonholeLapelPosition('both');
+      }
+    } else if (option.value === 'both') {
+      // Ensure "both" is always visible
+      option.style.display = '';
+    }
+  });
+}
+
+// Add this function after updateButtonholeLapelPositionOptions
+function updateSleeveDesignOptions() {
+  const sleeveDesignSelect = document.getElementById('sleeve-design-select');
+  const currentLapelStyleValue = getConfigValue('lapelStyle');
+  const options = Array.from(sleeveDesignSelect.querySelectorAll('option'));
+
+  // Hide "un-cuffed" option when lapel style is "notchpeak"
+  const shouldHideUnCuffedOption = currentLapelStyleValue === 'notchpeak';
+
+  options.forEach(option => {
+    if (option.value === 'un-cuffed') {
+      option.style.display = shouldHideUnCuffedOption ? 'none' : '';
+
+      // If the option is hidden and currently selected, force it to "cuffed"
+      if (shouldHideUnCuffedOption && option.selected) {
+        sleeveDesignSelect.value = 'cuffed';
+        CONFIG.defaults.sleeveDesign = 'cuffed';
+        currentSleeveDesign = 'cuffed';
+        updateSleeveDesign('cuffed');
+      }
+    } else if (option.value === 'cuffed') {
+      // Ensure cuffed is always visible
+      option.style.display = '';
+    }
+  });
 }
 
 // ----- Update On Config Change -----
@@ -1396,6 +1591,7 @@ function handleConfigChange(event) {
 
   if (configType === 'buttoning') {
     updateButtoning(value);
+
     updateLapelOptions(value);
     updateFront();
     updateVent();
@@ -1403,7 +1599,9 @@ function handleConfigChange(event) {
     updateLinings();
     const currentMartingaleBelt = getConfigValue('martingaleBelt');
     martingaleBelt(currentMartingaleBelt, currentMartingaleBelt);
-    updateVentOptions(); // Add this line
+    updateVentOptions();
+    updateMartingaleBeltOptions();
+    updateInvertedBoxPleatOptions(); // Add this line
   }
 
   if (configType === 'lapel-style') {
@@ -1412,6 +1610,12 @@ function handleConfigChange(event) {
     // Update buttonhole position when lapel style changes
     const currentButtonholePosition = getConfigValue('buttonholeLapelPosition');
     updateButtonholeLapelPosition(currentButtonholePosition);
+    updateMartingaleBeltOptions();
+    updateInvertedBoxPleatOptions();
+    updateChestPocketOptions();
+    updateSidePocketOptions();
+    updateButtonholeLapelPositionOptions(); // Add this line
+    updateSleeveDesignOptions(); // Add this line
   }
 
   if (configType === 'shoulder') {
@@ -1419,23 +1623,25 @@ function handleConfigChange(event) {
     updateFront();
     updateVent();
     invertedBoxPleat(true);
+    updateMartingaleBeltOptions();
+    updateInvertedBoxPleatOptions(); // Add this line
   }
 
   if (configType === 'inverted-box-pleat') {
     currentInvertedBoxPleat = value;
-    console.log("currentInvertedBoxPleat", currentInvertedBoxPleat);
     invertedBoxPleat(value);
     updateVent();
-    updateVentOptions(); // Add this line
+    updateVentOptions();
+    updateMartingaleBeltOptions();
+    updateInvertedBoxPleatOptions(); // Add this line
   }
 
   if (configType === 'vent') {
     currentVent = value;
-    console.log("currentVent", currentVent);
     if (value === 'single') {
       updateVent('single');
-    } else if (value === 'none') {
-      updateVent('none');
+    } else if (value === 'vent_Single_with_Button') {
+      updateVent('vent_Single_with_Button');
     }
   }
 
@@ -1443,9 +1649,9 @@ function handleConfigChange(event) {
     const isVisible = value === 'true';
     currentMartingaleBelt = value;
     martingaleBelt(value, isVisible);
-
     updateVent();
-    updateVentOptions(); // Add this line
+    updateVentOptions();
+    updateInvertedBoxPleatOptions(); // Add this line
   }
 
   if (configType === 'chest-pocket') {
@@ -1483,7 +1689,6 @@ function handleConfigChange(event) {
 
 // Add fabric change handler
 function handleFabricChange(fabricKey) {
-  console.log("handleFabricChange", fabricKey);
   CONFIG.defaults.fabric = fabricKey;
   updateFabric(fabricKey);
 }
@@ -1541,7 +1746,6 @@ function updateLapelOptions(buttoningType) {
  * @param {Object} materialOptions - Additional material properties
  */
 function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}) {
-  console.log("loadAndApplyButtonFabric", colorTextureUrl, normalTextureUrl);
   const textureLoader = new THREE.TextureLoader();
   let colorTextureLoaded = false;
   let normalTextureLoaded = false;
@@ -1609,8 +1813,6 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
 function applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOptions = {}) {
   if (!suitGroup) return;
 
-  console.log("🔧 Applying textures to buttonhole lapel elements");
-
   // Configure texture settings
   const configureTexture = (texture) => {
     texture.wrapS = THREE.RepeatWrapping;
@@ -1656,7 +1858,6 @@ function applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOpt
   // Function to apply textures to buttonhole lapel meshes
   function applyTexturesToButtonholeMesh(mesh) {
     if (mesh.isMesh && buttonholeLapelMeshes.includes(mesh.name)) {
-      // console.log("✅ Applying fabric texture to buttonhole lapel:", mesh.name);
 
       // Force material update and ensure proper material properties
       if (!mesh.material) {
@@ -1688,8 +1889,6 @@ function applyTexturesToButtonholeLapel(colorTexture, normalTexture, materialOpt
   suitGroup.traverse((child) => {
     applyTexturesToButtonholeMesh(child);
   });
-
-  console.log(`🎯 Applied fabric texture to ${appliedCount} buttonhole lapel elements`);
 }
 
 /**
@@ -1857,16 +2056,37 @@ function initConfigUI() {
   // Initialize vent options based on current martingale belt and inverted box pleat settings
   updateVentOptions();
 
+  // Initialize martingale belt options based on inverted box pleat and lapel style
+  updateMartingaleBeltOptions();
+
+  // Initialize inverted box pleat options based on lapel style
+  updateInvertedBoxPleatOptions();
+
+  // Initialize chest pocket options based on lapel style
+  updateChestPocketOptions(); // Add this line
+
+  // Initialize side pocket options based on lapel style
+  updateSidePocketOptions(); // Add this line
+
   // Initialize button and lining fabric selection UIs
   updateButtonFabricSelectionUI(CONFIG.defaults.buttonFabric);
   updateLiningFabricSelectionUI(CONFIG.defaults.liningFabric);
+
+  // Initialize side pocket options based on lapel style
+  updateSidePocketOptions();
+
+  // Initialize buttonhole lapel position options based on lapel style
+  updateButtonholeLapelPositionOptions(); // Add this line
+
+  // Initialize sleeve design options based on lapel style
+  updateSleeveDesignOptions(); // Add this line
 }
 
 // ----- Init Everything on Load -----
 document.addEventListener('DOMContentLoaded', () => {
   initThree();
   initFabricSelectionUI(); // Initialize fabric selection UI first
-  loadJacketModel(poloCoaModel);
+  loadJacketModel(overCoatModel);
 
   // Set default fabric selection
   selectedMainFabric = CONFIG.defaults.fabric;
@@ -1942,8 +2162,6 @@ function scaleButtonsOnXAxis(scaleFactor = 1.2) {
       });
     }
   });
-
-  console.log(`✅ Buttons scaled on X-axis by factor: ${scaleFactor}`);
 }
 
 // Function to reset button scaling to original size
@@ -1961,6 +2179,4 @@ function resetButtonScaling() {
       child.scale.needsUpdate = true;
     }
   });
-
-  console.log('✅ Button scaling reset to original size');
 }
